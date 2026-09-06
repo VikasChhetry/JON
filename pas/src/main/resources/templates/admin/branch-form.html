@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title=${isEdit ? 'Edit Branch' : 'Add Branch'},
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1 th:text="${isEdit ? 'Edit Branch' : 'Add Branch'}">Branch Form</h1>
+            <p>Define branch details</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card" style="max-width: 600px;">
+            <div class="card-body">
+                <form th:action="${isEdit ? '/admin/branches/edit/' + branch.id : '/admin/branches/new'}" 
+                      method="post" data-validate>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Branch Code (e.g., CSE, IT)</label>
+                        <input type="text" name="code" class="form-control" th:value="${branch.code}" 
+                               required maxlength="20" style="text-transform: uppercase;">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Branch Name</label>
+                        <input type="text" name="name" class="form-control" th:value="${branch.name}" 
+                               required maxlength="100">
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary" th:text="${isEdit ? 'Update Branch' : 'Create Branch'}">Submit</button>
+                        <a th:href="@{/admin/branches}" class="btn btn-outline">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

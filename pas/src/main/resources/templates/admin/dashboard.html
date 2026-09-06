@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Admin Dashboard',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Admin Dashboard</h1>
+            <p>System overview and statistics</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-code-branch"></i>
+                </div>
+                <div class="stat-value" th:text="${totalBranches}">0</div>
+                <div class="stat-label">Total Branches</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value" th:text="${totalUsers}">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <div class="stat-value" th:text="${totalProjects}">0</div>
+                <div class="stat-label">Total Projects</div>
+            </div>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-12">
+                <div class="content-card">
+                    <div class="card-header">
+                        <h2>User Distribution by Role</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between text-center">
+                            <div>
+                                <div class="fs-2 fw-bold text-info" th:text="${totalStudents}">0</div>
+                                <div class="text-muted small text-uppercase">Students</div>
+                            </div>
+                            <div>
+                                <div class="fs-2 fw-bold text-success" th:text="${totalFaculty}">0</div>
+                                <div class="text-muted small text-uppercase">Faculty</div>
+                            </div>
+                            <div>
+                                <div class="fs-2 fw-bold text-warning" th:text="${totalHods}">0</div>
+                                <div class="text-muted small text-uppercase">HODs</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

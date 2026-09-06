@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Branch Projects (HOD)',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>All Branch Projects</h1>
+            <p>Complete project oversight for <span th:text="${hod.branch.name}"></span> branch</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Project Title</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="project : ${projects}">
+                            <td class="fw-bold" th:text="${project.student.fullName}">Student Name</td>
+                            <td th:text="${project.title}">Project Title</td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${project.projectType.displayName}">TYPE</span>
+                            </td>
+                            <td>
+                                <span class="status-badge"
+                                      th:classappend="${#strings.toLowerCase(project.status.name()).replace('_', '-')}"
+                                      th:text="${project.status.displayName}">STATUS</span>
+                            </td>
+                            <td th:text="${#temporals.format(project.updatedAt, 'dd MMM yy')}">Date</td>
+                            <td class="text-end">
+                                <a th:href="@{'/hod/projects/' + ${project.id}}" class="btn btn-sm" th:classappend="${project.status.name() == 'PENDING_HOD_REVIEW' ? 'btn-primary' : 'btn-outline'}">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(projects)}">
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                No projects found in this branch.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

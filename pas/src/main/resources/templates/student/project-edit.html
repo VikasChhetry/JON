@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Edit & Resubmit Project',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="page-header mb-0">
+                <h1>Edit & Resubmit Project</h1>
+                <p>Update your project details and files based on reviewer feedback</p>
+            </div>
+            <a th:href="@{'/student/project/' + ${project.id}}" class="btn btn-outline">Cancel</a>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="content-card">
+                    <div class="card-body">
+                        <form th:action="@{'/student/project/' + ${project.id} + '/edit'}" method="post" enctype="multipart/form-data" data-validate>
+                            
+                            <h3 class="fs-5 fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-2">Project Details</h3>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Project Title *</label>
+                                <input type="text" name="title" class="form-control" th:value="${project.title}" required maxlength="200">
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Detailed Description *</label>
+                                <textarea name="description" class="form-control" rows="6" required th:text="${project.description}"></textarea>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Category</label>
+                                    <input type="text" name="category" class="form-control" th:value="${project.category}" maxlength="100">
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Tech Stack</label>
+                                    <input type="text" name="techStack" class="form-control" th:value="${project.techStack}" maxlength="300">
+                                </div>
+                            </div>
+
+                            <div th:if="${project.rejectedAtStage != null && (project.rejectedAtStage.name() == 'PENDING_FACULTY_REVIEW' || project.rejectedAtStage.name() == 'PENDING_HOD_REVIEW')}">
+                                <h3 class="fs-5 fw-bold mb-4 mt-5 border-bottom border-secondary border-opacity-25 pb-2">Project Files</h3>
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Upload New Project Report (PDF)</label>
+                                        <label class="file-upload w-100 d-block">
+                                            <input type="file" name="reportFile" class="d-none" accept=".pdf">
+                                            <div class="upload-icon"><i class="fas fa-file-pdf text-danger"></i></div>
+                                            <div class="upload-text text-primary">Click to select new report</div>
+                                            <div class="upload-hint">Max 10MB. Leave empty to keep existing.</div>
+                                        </label>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Upload New Project Source (ZIP)</label>
+                                        <label class="file-upload w-100 d-block">
+                                            <input type="file" name="projectFile" class="d-none" accept=".zip,.rar">
+                                            <div class="upload-icon"><i class="fas fa-file-archive text-warning"></i></div>
+                                            <div class="upload-text text-primary">Click to select new source</div>
+                                            <div class="upload-hint">Max 10MB. Leave empty to keep existing.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h3 class="fs-5 fw-bold mb-3 mt-4 border-bottom border-secondary border-opacity-25 pb-2">Resubmission Comments</h3>
+                            <div class="form-group mb-4">
+                                <label class="form-label">Message to Reviewer</label>
+                                <textarea name="comments" class="form-control" rows="3" placeholder="Explain what changes you have made to address the feedback..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning text-dark w-100 py-2 fs-6 fw-bold">
+                                <i class="fas fa-paper-plane me-2"></i> Submit Revisions
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Rejection Context -->
+                <div class="content-card border-danger border-opacity-50">
+                    <div class="card-header bg-danger bg-opacity-10 text-danger">
+                        <h2 class="text-danger"><i class="fas fa-exclamation-triangle"></i> Previous Feedback</h2>
+                    </div>
+                    <div class="card-body">
+                        <!-- Find the most recent rejection in history -->
+                        <div th:each="hist : ${history}" th:if="${hist.newStatus.name() == 'FACULTY_REJECTED' || hist.newStatus.name() == 'HOD_REJECTED'}" th:limit="1">
+                            
+                            <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25">
+                                <div class="text-muted small">Rejected by</div>
+                                <div class="fw-bold" th:text="${hist.performedBy.fullName}">Name</div>
+                                <div class="badge bg-secondary mt-1" th:text="${hist.userRole}">Role</div>
+                                <div class="text-muted small mt-1" th:text="${#temporals.format(hist.timestamp, 'dd MMM yy, HH:mm')}">Date</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="text-danger fw-bold mb-1">Rejection Reason:</div>
+                                <div class="bg-danger bg-opacity-10 p-2 rounded text-danger border border-danger border-opacity-25" th:text="${hist.rejectionReason}">
+                                    Reason
+                                </div>
+                            </div>
+
+                            <div th:if="${hist.comments != null && !hist.comments.isEmpty()}">
+                                <div class="text-secondary fw-bold mb-1">Additional Comments:</div>
+                                <div class="bg-dark p-2 rounded text-light border border-secondary border-opacity-25" th:text="${hist.comments}">
+                                    Comments
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

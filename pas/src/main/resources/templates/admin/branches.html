@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Manage Branches',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Branches</h1>
+                <p>Manage system branches/departments</p>
+            </div>
+            <a th:href="@{/admin/branches/new}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Branch
+            </a>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Created On</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="branch : ${branches}">
+                            <td>
+                                <span class="badge bg-secondary" th:text="${branch.code}">CODE</span>
+                            </td>
+                            <td class="fw-bold" th:text="${branch.name}">Branch Name</td>
+                            <td th:text="${#temporals.format(branch.createdAt, 'dd MMM yyyy, HH:mm')}">Date</td>
+                            <td class="text-end">
+                                <a th:href="@{'/admin/branches/edit/' + ${branch.id}}" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-edit"></i> Edit
+                                </a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(branches)}">
+                            <td colspan="4" class="text-center py-4 text-muted">
+                                No branches found. <a th:href="@{/admin/branches/new}">Create one</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

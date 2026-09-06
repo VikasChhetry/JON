@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Student Dashboard',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Student Dashboard</h1>
+            <p>Welcome back, <span th:text="${student.fullName}">Student Name</span></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div th:if="${hasActiveProject}" class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2>Active Project</h2>
+                <span class="status-badge"
+                      th:classappend="${#strings.toLowerCase(activeProject.status.name()).replace('_', '-')}"
+                      th:text="${activeProject.status.displayName}">STATUS</span>
+            </div>
+            <div class="card-body">
+                <h3 class="fs-5 fw-bold mb-2" th:text="${activeProject.title}">Project Title</h3>
+                <p class="text-secondary mb-3" th:text="${activeProject.description}">Project description snippet...</p>
+                
+                <div class="project-meta mb-4">
+                    <div class="project-meta-item">
+                        <i class="fas fa-tag icon"></i>
+                        <span th:text="${activeProject.category}">Category</span>
+                    </div>
+                    <div class="project-meta-item">
+                        <i class="fas fa-code icon"></i>
+                        <span th:text="${activeProject.techStack}">Tech Stack</span>
+                    </div>
+                    <div class="project-meta-item">
+                        <i class="fas fa-calendar icon"></i>
+                        <span th:text="${#temporals.format(activeProject.createdAt, 'dd MMM yyyy')}">Date</span>
+                    </div>
+                </div>
+                
+                <a th:href="@{'/student/project/' + ${activeProject.id}}" class="btn btn-primary">
+                    View Details & Progress <i class="fas fa-arrow-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+        
+        <div th:if="${!hasActiveProject}" class="content-card mb-4">
+            <div class="card-body text-center py-5">
+                <div class="empty-icon text-muted mb-3" style="font-size: 48px;">
+                    <i class="fas fa-folder-open opacity-50"></i>
+                </div>
+                <h3 class="fs-4 fw-bold mb-2">No Active Project</h3>
+                <p class="text-secondary mb-4">You don't have an active project right now. You can either propose your own idea or select from available topics.</p>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a th:href="@{/student/project/new}" class="btn btn-primary">
+                        <i class="fas fa-lightbulb"></i> Propose Idea
+                    </a>
+                    <a th:href="@{/student/topics}" class="btn btn-outline">
+                        <i class="fas fa-list"></i> Browse Topics
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content-card">
+            <div class="card-header">
+                <h2>Project History</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Last Updated</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="project : ${allProjects}">
+                            <td class="fw-bold" th:text="${project.title}">Title</td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${project.projectType.displayName}">TYPE</span>
+                            </td>
+                            <td>
+                                <span class="status-badge"
+                                      th:classappend="${#strings.toLowerCase(project.status.name()).replace('_', '-')}"
+                                      th:text="${project.status.displayName}">STATUS</span>
+                            </td>
+                            <td th:text="${#temporals.format(project.updatedAt, 'dd MMM yyyy')}">Date</td>
+                            <td class="text-end">
+                                <a th:href="@{'/student/project/' + ${project.id}}" class="btn btn-sm btn-outline">View</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(allProjects)}">
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                No past projects found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

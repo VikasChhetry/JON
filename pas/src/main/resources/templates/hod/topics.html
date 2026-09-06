@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Manage Topics',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Project Topics</h1>
+                <p>Manage pre-approved topics for <span th:text="${hod.branch.code}"></span> students</p>
+            </div>
+            <a th:href="@{/hod/topics/new}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Create Topic
+            </a>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Tech Stack</th>
+                            <th>Status</th>
+                            <th>Created By</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="topic : ${topics}">
+                            <td class="fw-bold" th:text="${topic.title}">Title</td>
+                            <td th:text="${topic.category}">Category</td>
+                            <td th:text="${topic.techStack}">Tech Stack</td>
+                            <td>
+                                <span class="badge" th:classappend="${topic.status.name() == 'AVAILABLE' ? 'bg-success' : (topic.status.name() == 'ASSIGNED' ? 'bg-info' : 'bg-secondary')}" th:text="${topic.status.displayName}">STATUS</span>
+                            </td>
+                            <td th:text="${topic.createdBy.fullName}">Creator</td>
+                            <td class="text-end">
+                                <form th:if="${topic.status.name() == 'AVAILABLE'}" th:action="@{'/hod/topics/' + ${topic.id} + '/archive'}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this topic?');">
+                                    <button type="submit" class="btn btn-sm btn-outline text-warning" title="Archive Topic">
+                                        <i class="fas fa-archive"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(topics)}">
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                No topics found. <a th:href="@{/hod/topics/new}">Create one</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

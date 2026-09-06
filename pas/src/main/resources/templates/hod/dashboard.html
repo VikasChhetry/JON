@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='HOD Dashboard',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>HOD Dashboard</h1>
+            <p>Branch Head Overview: <strong class="text-primary" th:text="${hod.branch.name}">Branch</strong></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="stat-value" th:text="${#lists.size(pendingReviews)}">0</div>
+                <div class="stat-label">Pending Final Reviews</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" th:text="${completedProjects}">0</div>
+                <div class="stat-label">Completed Projects</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-value" th:text="${studentCount}">0</div>
+                <div class="stat-label">Branch Students</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon amber">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                </div>
+                <div class="stat-value" th:text="${facultyCount}">0</div>
+                <div class="stat-label">Branch Faculty</div>
+            </div>
+        </div>
+
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary">Projects Awaiting Final HOD Approval</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Project Title</th>
+                            <th>Type</th>
+                            <th>Faculty Approved By</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="project : ${pendingReviews}">
+                            <td class="fw-bold" th:text="${project.student.fullName}">Name</td>
+                            <td th:text="${project.title}">Title</td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${project.projectType.displayName}">TYPE</span>
+                            </td>
+                            <td>
+                                <!-- Find the faculty who approved it from history -->
+                                <span class="text-muted" th:text="${project.approvalHistory.size() > 0 ? project.approvalHistory.get(0).performedBy.fullName : '-'}">Faculty</span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{'/hod/projects/' + ${project.id}}" class="btn btn-sm btn-primary">Review & Approve</a>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(pendingReviews)}">
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <div class="mb-3"><i class="fas fa-check-circle fs-1 text-success opacity-50"></i></div>
+                                No projects pending final review. You're all caught up!
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

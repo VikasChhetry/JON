@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="alerts">
+        <div th:if="${success}" class="alert alert-success">
+            <i class="fas fa-check-circle"></i>
+            <span th:text="${success}"></span>
+        </div>
+        
+        <div th:if="${error}" class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            <span th:text="${error}"></span>
+        </div>
+        
+        <div th:if="${param.error}" class="alert alert-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Invalid email or password.</span>
+        </div>
+        
+        <div th:if="${param.logout}" class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            <span>You have been logged out successfully.</span>
+        </div>
+        
+        <div th:if="${param.denied}" class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span>Access denied. You don't have permission to view this page.</span>
+        </div>
+    </div>
+</body>
+</html>

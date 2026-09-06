@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Manage Users',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Users</h1>
+                <p>Manage system access and roles</p>
+            </div>
+            <a th:href="@{/admin/users/new}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add User
+            </a>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Branch</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="user : ${users}">
+                            <td class="fw-bold" th:text="${user.fullName}">Name</td>
+                            <td th:text="${user.email}">Email</td>
+                            <td>
+                                <span class="badge" 
+                                      th:classappend="${user.role.name() == 'ADMIN' ? 'bg-danger' : 
+                                                      (user.role.name() == 'STUDENT' ? 'bg-info' : 
+                                                      (user.role.name() == 'FACULTY' ? 'bg-success' : 'bg-warning'))}"
+                                      th:text="${user.role.name()}">ROLE</span>
+                            </td>
+                            <td th:text="${user.branch != null ? user.branch.code : '-'}">Branch</td>
+                            <td>
+                                <span class="badge" th:classappend="${user.enabled ? 'bg-success' : 'bg-secondary'}"
+                                      th:text="${user.enabled ? 'Active' : 'Disabled'}">Status</span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{'/admin/users/edit/' + ${user.id}}" class="btn btn-sm btn-outline me-1">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <form th:action="@{'/admin/users/' + ${user.id} + '/toggle'}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm" th:classappend="${user.enabled ? 'btn-outline' : 'btn-success'}"
+                                            th:title="${user.enabled ? 'Disable User' : 'Enable User'}"
+                                            th:disabled="${user.email == 'admin@pas.com'}">
+                                        <i class="fas" th:classappend="${user.enabled ? 'fa-ban' : 'fa-check'}"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(users)}">
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                No users found.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Faculty Dashboard',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Faculty Dashboard</h1>
+            <p>Branch: <strong class="text-primary" th:text="${faculty.branch.name}">Branch</strong></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon amber">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <div class="stat-value" th:text="${#lists.size(pendingIdeas)}">0</div>
+                <div class="stat-label">Pending Idea Reviews</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-search"></i>
+                </div>
+                <div class="stat-value" th:text="${#lists.size(pendingReviews)}">0</div>
+                <div class="stat-label">Pending Project Reviews</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" th:text="${completedProjects}">0</div>
+                <div class="stat-label">Completed Projects</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-book"></i>
+                </div>
+                <div class="stat-value" th:text="${topicCount}">0</div>
+                <div class="stat-label">Total Topics</div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Pending Ideas -->
+            <div class="col-lg-6 mb-4">
+                <div class="content-card h-100">
+                    <div class="card-header bg-warning bg-opacity-10">
+                        <h2 class="text-warning">Pending Idea Reviews</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Title</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="project : ${pendingIdeas}">
+                                    <td class="fw-bold" th:text="${project.student.fullName}">Name</td>
+                                    <td th:text="${project.title}">Title</td>
+                                    <td class="text-end">
+                                        <a th:href="@{'/faculty/projects/' + ${project.id}}" class="btn btn-sm btn-outline">Review</a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(pendingIdeas)}">
+                                    <td colspan="3" class="text-center py-4 text-muted">No pending ideas.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Pending Projects -->
+            <div class="col-lg-6 mb-4">
+                <div class="content-card h-100">
+                    <div class="card-header bg-info bg-opacity-10">
+                        <h2 class="text-info">Pending Project Reviews</h2>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Title</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr th:each="project : ${pendingReviews}">
+                                    <td class="fw-bold" th:text="${project.student.fullName}">Name</td>
+                                    <td th:text="${project.title}">Title</td>
+                                    <td class="text-end">
+                                        <a th:href="@{'/faculty/projects/' + ${project.id}}" class="btn btn-sm btn-primary">Review</a>
+                                    </td>
+                                </tr>
+                                <tr th:if="${#lists.isEmpty(pendingReviews)}">
+                                    <td colspan="3" class="text-center py-4 text-muted">No pending projects.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

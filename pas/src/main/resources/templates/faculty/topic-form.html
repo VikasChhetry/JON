@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Create Topic',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Create Topic</h1>
+                <p>Add new topics for students to choose from</p>
+            </div>
+            <a th:href="@{/faculty/topics}" class="btn btn-outline">
+                <i class="fas fa-arrow-left"></i> Back to List
+            </a>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="row">
+            <!-- Manual Creation Form -->
+            <div class="col-lg-7 mb-4">
+                <div class="content-card h-100">
+                    <div class="card-header bg-primary bg-opacity-10">
+                        <h2><i class="fas fa-edit me-2 text-primary"></i> Create Manually</h2>
+                    </div>
+                    <div class="card-body">
+                        <form th:action="@{/faculty/topics/new}" method="post" data-validate>
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Topic Title *</label>
+                                <input type="text" name="title" class="form-control" required maxlength="200">
+                            </div>
+                            
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Description *</label>
+                                <textarea name="description" class="form-control" rows="4" required></textarea>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Category</label>
+                                    <input type="text" name="category" class="form-control" maxlength="100">
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label">Tech Stack</label>
+                                    <input type="text" name="techStack" class="form-control" maxlength="300">
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100">Create Topic</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Bulk Upload Form -->
+            <div class="col-lg-5 mb-4">
+                <div class="content-card h-100">
+                    <div class="card-header bg-info bg-opacity-10">
+                        <h2><i class="fas fa-file-csv me-2 text-info"></i> Bulk Upload (CSV)</h2>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <p class="text-secondary mb-4">Upload multiple topics at once using a CSV file. The file must have a header row.</p>
+                        
+                        <div class="bg-dark p-3 rounded border border-secondary border-opacity-25 mb-4">
+                            <strong class="d-block mb-2 fs-6">Required CSV Format:</strong>
+                            <code class="text-light">title,description,category,techStack</code><br>
+                            <code class="text-light">"AI Bot","A chatbot","AI","Python"</code>
+                        </div>
+                        
+                        <form th:action="@{/faculty/topics/upload}" method="post" enctype="multipart/form-data" class="mt-auto">
+                            <div class="form-group mb-4">
+                                <label class="file-upload w-100 d-block">
+                                    <input type="file" name="file" class="d-none" accept=".csv" required>
+                                    <div class="upload-icon"><i class="fas fa-file-csv text-info"></i></div>
+                                    <div class="upload-text text-primary">Click to select CSV file</div>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-info w-100 text-white">
+                                <i class="fas fa-upload me-2"></i> Upload Topics
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
