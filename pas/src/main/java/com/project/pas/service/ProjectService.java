@@ -94,6 +94,72 @@ public class ProjectService {
         return projectRepository.countByStatus(status);
     }
 
+    public List<Project> getAllProjects() {
+        return projectRepository.findAll();
+    }
+
+    // ==================== Delete Operations ====================
+
+    /**
+     * Student can delete their project ONLY if faculty has not taken any action yet.
+     * Rule: Deletion is allowed only when there is NO Faculty action/review recorded for that project.
+     */
+    public boolean canStudentDelete(Project project, User student) {
+        if (project == null || student == null) return false;
+        if (project.getStudent() == null || !project.getStudent().getId().equals(student.getId())) return false;
+
+        // Disallow if status is beyond initial waiting states
+        ProjectStatus status = project.getStatus();
+        if (status != ProjectStatus.PROJECT_IDEA_PENDING_FACULTY &&
+            status != ProjectStatus.TOPIC_SELECTED &&
+            status != ProjectStatus.PENDING_FACULTY_REVIEW) {
+            return false;
+        }
+
+        // Check if faculty has recorded any history / action
+        List<ApprovalHistory> histories = historyRepository.findByProjectIdOrderByTimestampDesc(project.getId());
+        for (ApprovalHistory history : histories) {
+            if (history.getUserRole() == Role.FACULTY ||
+                (history.getPerformedBy() != null && history.getPerformedBy().getRole() == Role.FACULTY)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void studentDeleteProject(Project project, User student) {
+        validateStudent(student);
+
+        if (!canStudentDelete(project, student)) {
+            throw new IllegalStateException(
+                    "Cannot delete project: Faculty guide has already taken action on this project or project state does not allow deletion.");
+        }
+
+        // If topic-based, release the topic back to available
+        if (project.getTopic() != null) {
+            topicService.releaseAssigned(project.getTopic());
+        }
+
+        historyRepository.deleteByProject(project);
+        projectRepository.delete(project);
+    }
+
+    /**
+     * Admin can delete any project at any time, regardless of status.
+     */
+    public void adminDeleteProject(Long projectId) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        // Release topic if applicable
+        if (project.getTopic() != null) {
+            topicService.releaseAssigned(project.getTopic());
+        }
+
+        historyRepository.deleteByProject(project);
+        projectRepository.delete(project);
+    }
+
     // ==================== Custom Project Flow ====================
 
     /**

@@ -1,7 +1,7 @@
 package com.project.pas.service;
 
 import com.project.pas.model.Branch;
-import com.project.pas.repository.BranchRepository;
+import com.project.pas.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +13,21 @@ import java.util.Optional;
 public class BranchService {
 
     private final BranchRepository branchRepository;
+    private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectTopicRepository topicRepository;
+    private final GuideSelectionFormRepository formRepository;
+    private final GuideAssignmentRepository assignmentRepository;
 
-    public BranchService(BranchRepository branchRepository) {
+    public BranchService(BranchRepository branchRepository, UserRepository userRepository,
+                         ProjectRepository projectRepository, ProjectTopicRepository topicRepository,
+                         GuideSelectionFormRepository formRepository, GuideAssignmentRepository assignmentRepository) {
         this.branchRepository = branchRepository;
+        this.userRepository = userRepository;
+        this.projectRepository = projectRepository;
+        this.topicRepository = topicRepository;
+        this.formRepository = formRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     public List<Branch> getAllBranches() {
@@ -50,7 +62,20 @@ public class BranchService {
     }
 
     public void deleteBranch(Long id) {
-        branchRepository.deleteById(id);
+        Branch branch = branchRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
+
+        boolean hasUsers = userRepository.existsByBranch(branch);
+        boolean hasProjects = projectRepository.existsByBranch(branch);
+        boolean hasTopics = topicRepository.existsByBranch(branch);
+        boolean hasForms = formRepository.existsByBranch(branch);
+        boolean hasAssignments = assignmentRepository.existsByBranch(branch);
+
+        if (hasUsers || hasProjects || hasTopics || hasForms || hasAssignments) {
+            throw new IllegalStateException("Cannot delete branch '" + branch.getName() + "': it has associated users, projects, topics, or guide assignments. Please remove or reassign those records first.");
+        }
+
+        branchRepository.delete(branch);
     }
 
     public long count() {

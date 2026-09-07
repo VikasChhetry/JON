@@ -15,6 +15,8 @@ public interface GuideAssignmentRepository extends JpaRepository<GuideAssignment
     List<GuideAssignment> findByFaculty(User faculty);
     List<GuideAssignment> findByBranch(Branch branch);
     long countByFaculty(User faculty);
+    boolean existsByFaculty(User faculty);
+    boolean existsByBranch(Branch branch);
     boolean existsByStudent(User student);
     void deleteByStudent(User student);
 }

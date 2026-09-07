@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Manage Projects',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header d-flex justify-content-between align-items-center">
+            <div>
+                <h1>Project Management</h1>
+                <p>Overview and administration of all projects across all branches</p>
+            </div>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card">
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Title</th>
+                            <th>Student</th>
+                            <th>Branch</th>
+                            <th>Guide</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="p : ${projects}">
+                            <td class="fw-bold" th:text="${'#' + p.id}">#1</td>
+                            <td th:text="${p.title}">Title</td>
+                            <td th:text="${p.student != null ? p.student.fullName : '-'}">Student</td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${p.branch != null ? p.branch.code : '-'}">BRANCH</span>
+                            </td>
+                            <td th:text="${p.facultyGuide != null ? p.facultyGuide.fullName : 'Unassigned'}">Guide</td>
+                            <td th:text="${p.projectType != null ? p.projectType.displayName : '-'}">Type</td>
+                            <td>
+                                <span class="status-badge"
+                                      th:classappend="${#strings.toLowerCase(p.status.name()).replace('_', '-')}"
+                                      th:text="${p.status.displayName}">STATUS</span>
+                            </td>
+                            <td class="text-end">
+                                <form th:action="@{'/admin/projects/' + ${p.id} + '/delete'}" method="post" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Project"
+                                            onclick="return confirm('ADMIN ACTION: Delete project ' + [[${p.title}]] + '? This will permanently remove the project and its history.')">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(projects)}">
+                            <td colspan="8" class="text-center py-4 text-muted">
+                                No projects found in the system.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

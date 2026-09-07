@@ -139,6 +139,7 @@ public class StudentController {
         model.addAttribute("project", project);
         model.addAttribute("history", history);
         model.addAttribute("student", student);
+        model.addAttribute("canDelete", projectService.canStudentDelete(project, student));
         return "student/project-detail";
     }
 
@@ -300,5 +301,33 @@ public class StudentController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/student/guide-selection";
+    }
+
+    @PostMapping("/guide-selection/remove")
+    public String removeGuide(Authentication auth, RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            guideSelectionService.studentRemoveGuide(student);
+            redirect.addFlashAttribute("success", "Guide removed. You can select a new guide.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/guide-selection";
+    }
+
+    // ==================== Delete Project ====================
+
+    @PostMapping("/project/{id}/delete")
+    public String deleteProject(Authentication auth, @PathVariable Long id, RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+            projectService.studentDeleteProject(project, student);
+            redirect.addFlashAttribute("success", "Project deleted successfully.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/dashboard";
     }
 }

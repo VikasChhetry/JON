@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface GuideSelectionFormRepository extends JpaRepository<GuideSelectionForm, Long> {
     Optional<GuideSelectionForm> findByBranchAndActiveTrue(Branch branch);
     List<GuideSelectionForm> findByBranchOrderByCreatedAtDesc(Branch branch);
+    boolean existsByBranch(Branch branch);
+    boolean existsByCreatedBy(com.project.pas.model.User createdBy);
 }

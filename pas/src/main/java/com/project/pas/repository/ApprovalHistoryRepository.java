@@ -11,4 +11,6 @@ import java.util.List;
 public interface ApprovalHistoryRepository extends JpaRepository<ApprovalHistory, Long> {
     List<ApprovalHistory> findByProjectOrderByTimestampDesc(Project project);
     List<ApprovalHistory> findByProjectIdOrderByTimestampDesc(Long projectId);
+    boolean existsByPerformedBy(com.project.pas.model.User performedBy);
+    void deleteByProject(Project project);
 }

@@ -42,6 +42,20 @@
                     <i class="fas fa-info-circle text-primary"></i>
                     You can now <a th:href="@{/student/project/new}">propose your project idea</a> or <a th:href="@{/student/topics}">select a topic</a>. Your project will be reviewed by your assigned guide.
                 </div>
+
+                <!-- Remove guide button — only if student self-selected and selection is active -->
+                <div class="mt-3" th:if="${assignment.assignedBy == 'STUDENT' and isActive}">
+                    <form th:action="@{/student/guide-selection/remove}" method="post" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Remove your faculty guide? You will need to select a new one.')">
+                            <i class="fas fa-user-minus"></i> Remove Guide
+                        </button>
+                    </form>
+                </div>
+                <div class="mt-3 p-3 bg-warning bg-opacity-10 rounded" th:if="${assignment.assignedBy != 'STUDENT'}">
+                    <i class="fas fa-lock text-warning"></i>
+                    Your guide was assigned by <strong th:text="${assignment.assignedBy}">HOD</strong>. Contact the HOD to request a change.
+                </div>
             </div>
         </div>
 

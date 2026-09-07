@@ -185,6 +185,37 @@ public class GuideSelectionService {
         return assignment;
     }
 
+    /**
+     * Student removes their own guide selection.
+     * Only allowed if the student selected the guide themselves (assignedBy == "STUDENT").
+     * If HOD assigned the guide, the student cannot remove it.
+     */
+    public void studentRemoveGuide(User student) {
+        validateStudent(student);
+        Branch branch = student.getBranch();
+
+        GuideAssignment assignment = assignmentRepository.findByStudent(student)
+                .orElseThrow(() -> new IllegalArgumentException("You don't have a guide assigned"));
+
+        // Only allow removal if student selected it themselves
+        if (!"STUDENT".equals(assignment.getAssignedBy())) {
+            throw new IllegalStateException(
+                    "Cannot remove guide: your guide was assigned by " + assignment.getAssignedBy()
+                    + ". Contact HOD for changes.");
+        }
+
+        // Check selection period is still active
+        if (!isSelectionActive(branch)) {
+            throw new IllegalStateException("Cannot remove guide outside the active selection period. Contact HOD.");
+        }
+
+        User previousFaculty = assignment.getFaculty();
+        assignmentRepository.deleteByStudent(student);
+
+        recordHistory("Student removed self-selected guide", student, student,
+                previousFaculty, null, "Student removed own selection", branch);
+    }
+
     // ==================== Faculty Operations ====================
 
     /**
@@ -258,31 +289,40 @@ public class GuideSelectionService {
             throw new IllegalArgumentException("User is not a faculty member");
         }
 
-        // Check capacity
-        long currentAssigned = assignmentRepository.countByFaculty(faculty);
-        if (faculty.getMaxGuidingCapacity() > 0 && currentAssigned >= faculty.getMaxGuidingCapacity()) {
-            throw new IllegalStateException("Faculty has reached maximum capacity (" + faculty.getMaxGuidingCapacity() + ")");
+        Optional<GuideAssignment> existingOpt = assignmentRepository.findByStudent(student);
+        User previousFaculty = existingOpt.map(GuideAssignment::getFaculty).orElse(null);
+
+        // Check capacity if assigning to a different faculty
+        if (previousFaculty == null || !previousFaculty.getId().equals(faculty.getId())) {
+            long currentAssigned = assignmentRepository.countByFaculty(faculty);
+            if (faculty.getMaxGuidingCapacity() > 0 && currentAssigned >= faculty.getMaxGuidingCapacity()) {
+                throw new IllegalStateException("Faculty has reached maximum capacity (" + faculty.getMaxGuidingCapacity() + ")");
+            }
         }
 
-        // Remove existing assignment if any
-        User previousFaculty = null;
-        Optional<GuideAssignment> existing = assignmentRepository.findByStudent(student);
-        if (existing.isPresent()) {
-            previousFaculty = existing.get().getFaculty();
-            assignmentRepository.deleteByStudent(student);
-        }
+        GuideAssignment assignment;
+        boolean isReassignment = existingOpt.isPresent();
 
-        // Create new assignment
-        GuideAssignment assignment = new GuideAssignment();
-        assignment.setStudent(student);
-        assignment.setFaculty(faculty);
-        assignment.setBranch(branch);
-        assignment.setAssignedBy("HOD");
-        getActiveForm(branch).ifPresent(assignment::setSelectionForm);
+        if (isReassignment) {
+            assignment = existingOpt.get();
+            assignment.setFaculty(faculty);
+            assignment.setAssignedBy("HOD");
+            assignment.setAssignedAt(LocalDateTime.now());
+            getActiveForm(branch).ifPresent(assignment::setSelectionForm);
+        } else {
+            assignment = new GuideAssignment();
+            assignment.setStudent(student);
+            assignment.setFaculty(faculty);
+            assignment.setBranch(branch);
+            assignment.setAssignedBy("HOD");
+            assignment.setAssignedAt(LocalDateTime.now());
+            getActiveForm(branch).ifPresent(assignment::setSelectionForm);
+        }
 
         assignment = assignmentRepository.save(assignment);
 
-        recordHistory("HOD assigned student to faculty", hod, student, previousFaculty, faculty, reason, branch);
+        String action = isReassignment ? "HOD REASSIGNED GUIDE" : "HOD ASSIGNED GUIDE";
+        recordHistory(action, hod, student, previousFaculty, faculty, reason, branch);
 
         return assignment;
     }
@@ -304,16 +344,15 @@ public class GuideSelectionService {
                 .orElseThrow(() -> new IllegalArgumentException("Student has no guide assignment"));
 
         User previousFaculty = assignment.getFaculty();
-        assignmentRepository.deleteByStudent(student);
+        assignmentRepository.delete(assignment);
 
-        recordHistory("HOD removed student from faculty", hod, student, previousFaculty, null, reason, hod.getBranch());
+        recordHistory("HOD REMOVED GUIDE", hod, student, previousFaculty, null, reason, hod.getBranch());
     }
 
     /**
      * HOD reassigns a student from one faculty to another.
      */
     public GuideAssignment hodReassignStudent(User hod, Long studentId, Long newFacultyId, String reason) {
-        // hodAssignStudent handles everything including removing existing
         return hodAssignStudent(hod, studentId, newFacultyId, reason);
     }
 

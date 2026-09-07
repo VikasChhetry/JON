@@ -12,5 +12,7 @@ import java.util.List;
 public interface ProjectTopicRepository extends JpaRepository<ProjectTopic, Long> {
     List<ProjectTopic> findByBranchAndStatus(Branch branch, TopicStatus status);
     List<ProjectTopic> findByBranch(Branch branch);
+    boolean existsByCreatedBy(com.project.pas.model.User createdBy);
+    boolean existsByBranch(Branch branch);
     long countByBranch(Branch branch);
 }

@@ -16,5 +16,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByBranchAndRole(Branch branch, Role role);
     List<User> findByRole(Role role);
     List<User> findByBranch(Branch branch);
+    boolean existsByBranch(Branch branch);
     long countByRole(Role role);
 }

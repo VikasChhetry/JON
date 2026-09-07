@@ -44,6 +44,9 @@
                     <a th:href="@{/admin/users}" class="nav-link" th:classappend="${requestURI != null and requestURI.startsWith('/admin/users')} ? 'active'">
                         <i class="fas fa-users nav-icon"></i> Users
                     </a>
+                    <a th:href="@{/admin/projects}" class="nav-link" th:classappend="${requestURI != null and requestURI.startsWith('/admin/projects')} ? 'active'">
+                        <i class="fas fa-project-diagram nav-icon"></i> Projects
+                    </a>
                 </div>
 
                 <!-- Student Navigation -->

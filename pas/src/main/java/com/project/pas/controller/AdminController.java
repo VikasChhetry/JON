@@ -174,4 +174,47 @@ public class AdminController {
         }
         return "redirect:/admin/users";
     }
+
+    // ==================== Delete Operations ====================
+
+    @PostMapping("/branches/{id}/delete")
+    public String deleteBranch(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            branchService.deleteBranch(id);
+            redirect.addFlashAttribute("success", "Branch deleted successfully");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Cannot delete branch: " + e.getMessage());
+        }
+        return "redirect:/admin/branches";
+    }
+
+    @PostMapping("/users/{id}/delete")
+    public String deleteUser(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            userService.deleteUser(id);
+            redirect.addFlashAttribute("success", "User deleted successfully");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Cannot delete user: " + e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    // ==================== Project Management ====================
+
+    @GetMapping("/projects")
+    public String listProjects(Model model) {
+        model.addAttribute("projects", projectService.getAllProjects());
+        return "admin/projects";
+    }
+
+    @PostMapping("/projects/{id}/delete")
+    public String deleteProject(@PathVariable Long id, RedirectAttributes redirect) {
+        try {
+            projectService.adminDeleteProject(id);
+            redirect.addFlashAttribute("success", "Project deleted successfully");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Cannot delete project: " + e.getMessage());
+        }
+        return "redirect:/admin/projects";
+    }
 }

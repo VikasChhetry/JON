@@ -15,6 +15,9 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByBranch(Branch branch);
     List<Project> findByBranchAndStatus(Branch branch, ProjectStatus status);
     List<Project> findByBranchAndStatusIn(Branch branch, List<ProjectStatus> statuses);
+    boolean existsByStudent(User student);
+    boolean existsByFacultyGuide(User facultyGuide);
+    boolean existsByBranch(Branch branch);
     boolean existsByStudentAndStatusNotIn(User student, List<ProjectStatus> excludedStatuses);
     long countByBranch(Branch branch);
     long countByBranchAndStatus(Branch branch, ProjectStatus status);

@@ -3,7 +3,7 @@ package com.project.pas.service;
 import com.project.pas.model.Branch;
 import com.project.pas.model.Role;
 import com.project.pas.model.User;
-import com.project.pas.repository.UserRepository;
+import com.project.pas.repository.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,10 +17,25 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final ProjectRepository projectRepository;
+    private final GuideAssignmentRepository guideAssignmentRepository;
+    private final ApprovalHistoryRepository approvalHistoryRepository;
+    private final ProjectTopicRepository projectTopicRepository;
+    private final GuideSelectionFormRepository formRepository;
+    private final GuideAssignmentHistoryRepository guideHistoryRepository;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+                       ProjectRepository projectRepository, GuideAssignmentRepository guideAssignmentRepository,
+                       ApprovalHistoryRepository approvalHistoryRepository, ProjectTopicRepository projectTopicRepository,
+                       GuideSelectionFormRepository formRepository, GuideAssignmentHistoryRepository guideHistoryRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.projectRepository = projectRepository;
+        this.guideAssignmentRepository = guideAssignmentRepository;
+        this.approvalHistoryRepository = approvalHistoryRepository;
+        this.projectTopicRepository = projectTopicRepository;
+        this.formRepository = formRepository;
+        this.guideHistoryRepository = guideHistoryRepository;
     }
 
     public List<User> getAllUsers() {
@@ -104,5 +119,26 @@ public class UserService {
 
     public long countByRole(Role role) {
         return userRepository.countByRole(role);
+    }
+
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        boolean hasProjects = projectRepository.existsByStudent(user) || projectRepository.existsByFacultyGuide(user);
+        boolean hasAssignments = guideAssignmentRepository.existsByStudent(user) || guideAssignmentRepository.existsByFaculty(user);
+        boolean hasApprovalHist = approvalHistoryRepository.existsByPerformedBy(user);
+        boolean hasTopics = projectTopicRepository.existsByCreatedBy(user);
+        boolean hasForms = formRepository.existsByCreatedBy(user);
+        boolean hasGuideHist = guideHistoryRepository.existsByStudent(user) || guideHistoryRepository.existsByPreviousFaculty(user)
+                || guideHistoryRepository.existsByNewFaculty(user) || guideHistoryRepository.existsByPerformedBy(user);
+
+        if (hasProjects || hasAssignments || hasApprovalHist || hasTopics || hasForms || hasGuideHist) {
+            user.setEnabled(false);
+            userRepository.save(user);
+            throw new IllegalStateException("User '" + user.getFullName() + "' has historical records in the system and cannot be physically deleted. The account has been deactivated instead.");
+        }
+
+        userRepository.delete(user);
     }
 }

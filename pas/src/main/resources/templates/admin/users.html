@@ -58,6 +58,13 @@
                                         <i class="fas" th:classappend="${user.enabled ? 'fa-ban' : 'fa-check'}"></i>
                                     </button>
                                 </form>
+                                <form th:action="@{'/admin/users/' + ${user.id} + '/delete'}" method="post" class="d-inline"
+                                      th:if="${user.email != 'admin@pas.com'}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete User"
+                                            onclick="return confirm('Permanently delete this user? This cannot be undone.')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(users)}">

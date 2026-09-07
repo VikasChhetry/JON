@@ -103,6 +103,14 @@ public class ProjectTopicService {
     }
 
     /**
+     * Release an assigned topic back to available (e.g., when a project is deleted).
+     */
+    public void releaseAssigned(ProjectTopic topic) {
+        topic.setStatus(TopicStatus.AVAILABLE);
+        topicRepository.save(topic);
+    }
+
+    /**
      * Archive a topic.
      */
     public void archiveTopic(Long id, User user) {
