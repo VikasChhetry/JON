@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Guide Selection Form',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1 th:text="${isEdit ? 'Edit Guide Selection Form' : 'Create Guide Selection Form'}">Form</h1>
+            <p>Configure the guide selection period and faculty capacities</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <!-- Form Creation / Edit -->
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-calendar-alt"></i> Selection Period</h2>
+            </div>
+            <div class="p-4">
+                <form th:if="${!isEdit}" th:action="@{/hod/guide-selection/form}" method="post">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Start Date & Time</label>
+                            <input type="datetime-local" name="startDateTime" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">End Date & Time</label>
+                            <input type="datetime-local" name="endDateTime" class="form-control" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Create Form</button>
+                    <a th:href="@{/hod/guide-selection}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                </form>
+
+                <form th:if="${isEdit}" th:action="@{'/hod/guide-selection/form/' + ${activeForm.id} + '/update'}" method="post">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Start Date & Time</label>
+                            <input type="datetime-local" name="startDateTime" class="form-control" required
+                                   th:value="${#temporals.format(activeForm.startDateTime, 'yyyy-MM-dd''T''HH:mm')}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">End Date & Time</label>
+                            <input type="datetime-local" name="endDateTime" class="form-control" required
+                                   th:value="${#temporals.format(activeForm.endDateTime, 'yyyy-MM-dd''T''HH:mm')}">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Dates</button>
+                    <a th:href="@{/hod/guide-selection}" class="btn btn-outline-secondary ms-2">Cancel</a>
+                </form>
+            </div>
+        </div>
+
+        <!-- Faculty Capacity Configuration -->
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-users-cog"></i> Faculty Capacity Configuration</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Faculty Name</th>
+                            <th>Email</th>
+                            <th>Current Capacity</th>
+                            <th>Assigned</th>
+                            <th>Set Capacity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="info : ${facultyInfo}">
+                            <td class="fw-bold" th:text="${info.faculty.fullName}">Name</td>
+                            <td class="text-muted" th:text="${info.faculty.email}">email</td>
+                            <td><span class="badge bg-primary" th:text="${info.maxCapacity}">0</span></td>
+                            <td><span class="badge bg-secondary" th:text="${info.assignedCount}">0</span></td>
+                            <td>
+                                <form th:action="@{'/hod/guide-selection/faculty/' + ${info.faculty.id} + '/capacity'}" method="post" class="d-flex gap-2">
+                                    <input type="number" name="maxCapacity" class="form-control form-control-sm" style="width: 80px;" min="0"
+                                           th:value="${info.maxCapacity}" required>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary"><i class="fas fa-save"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(facultyInfo)}">
+                            <td colspan="5" class="text-center py-4 text-muted">No faculty members in this branch. Add faculty first via Admin panel.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a th:href="@{/hod/guide-selection}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back to Guide Selection</a>
+        </div>
+    </main>
+</body>
+</html>

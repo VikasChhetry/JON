@@ -1,0 +1,41 @@
+there will be the to sitution fro the Project approval workflow:
+WHEN STUDENT WANT TO SUBMIT THERE OWN Project AND WHEN THERE WHAT TO WORK ON THE PROJECT GIVEN BY THE FACULTY OR HOD IN THE LIST 
+1) when student want to submit there own idea project 
+Project approval workflow: 
+Student Login → Student Dashboard → Submit Project idea  → Faculty Reviews Project idea 
+If Faculty Rejects → Student Edits → Resubmits → Project idea goes back to Faculty Reviews.
+If Faculty Approves → Student can now work own there project and can submit there project to the faculty for final approval 
+Student submit there project → Faculty Reviews Project. 
+If Faculty Approves → Project goes to HOD Reviews.
+If Faculty Rejects → Student Edits → Resubmits → Project goes back to Faculty Reviews.
+If HOD Approves → Project becomes COMPLETED.
+If HOD Rejects → Student Edits → Resubmits → Project goes back to HOD Reviews.
+FACULTY AND HOD CAN ADD COMMENTS OR REJECT THE PROJECT WITH REJECTION REASON 
+2) when student chosses the project given by the faculty or hod 
+Project approval workflow:
+Student select the topic and then submit there project → Faculty Reviews Project. 
+If Faculty Approves → Project goes to HOD Reviews.
+If Faculty Rejects → Student Edits → Resubmits → Project goes back to Faculty Reviews.
+If HOD Approves → Project becomes COMPLETED.
+If HOD Rejects → Student Edits → Resubmits → Project goes back to HOD Reviews.
+FACULTY AND HOD CAN ADD COMMENTS OR REJECT THE PROJECT WITH REJECTION REASON 
+
+
+//----------------------------------------------------------------------------------------------//
+1) student can work on only one project at a time 
+2) if he submit one project and then he can select another project
+//----------------------------------------------------------------------------------------------//
+faculty and hod uplode the project topic sheet or can create the topic one by one 
+project topic will contian---
+
+1. project title
+2. project discription 
+3. project category
+4. project tech stack
+
+faculty and hod can create or uplode the project in only there own branch 
+
+
+//-------------------------------------------------------------------------------------------------//
+PROJECT APPROVAL WORKFLOW  SHOULD BE AROUND THE SAME BRANCH STUDENT FACULTY AND HOD SHOULD NOT GO OUT SIDE THE OTHER BRANCHS
+

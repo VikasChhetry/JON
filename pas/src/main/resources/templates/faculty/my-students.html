@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='My Students',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>My Students</h1>
+            <p>Students assigned to you for project guidance</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <!-- Capacity Stats -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-user-graduate"></i></div>
+                <div class="stat-value" th:text="${assignedCount}">0</div>
+                <div class="stat-label">Assigned Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-users"></i></div>
+                <div class="stat-value" th:text="${maxCapacity}">0</div>
+                <div class="stat-label">Max Capacity</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber"><i class="fas fa-chair"></i></div>
+                <div class="stat-value" th:text="${vacancies}">0</div>
+                <div class="stat-label">Vacancies</div>
+            </div>
+        </div>
+
+        <!-- Selection Period Info -->
+        <div class="content-card mb-4" th:if="${activeForm != null}">
+            <div class="p-3">
+                <div class="alert mb-0" th:classappend="${isActive ? 'alert-success' : 'alert-secondary'}">
+                    <i class="fas" th:classappend="${isActive ? 'fa-clock' : 'fa-lock'}"></i>
+                    <span th:if="${isActive}"> Selection period is <strong>active</strong>. You can remove students during this period.</span>
+                    <span th:if="${!isActive}"> Selection period has <strong>ended</strong>. Student changes are locked. Contact HOD for modifications.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Student List -->
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-list"></i> Assigned Students</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Email</th>
+                            <th>Assigned Date</th>
+                            <th>Assigned By</th>
+                            <th th:if="${isActive}" class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a : ${assignments}">
+                            <td class="fw-bold" th:text="${a.student.fullName}">Name</td>
+                            <td class="text-muted" th:text="${a.student.email}">email</td>
+                            <td th:text="${#temporals.format(a.assignedAt, 'dd MMM yyyy, hh:mm a')}">Date</td>
+                            <td>
+                                <span class="badge" th:classappend="${a.assignedBy == 'STUDENT' ? 'bg-info' : (a.assignedBy == 'HOD' ? 'bg-primary' : 'bg-secondary')}" th:text="${a.assignedBy}">BY</span>
+                            </td>
+                            <td th:if="${isActive}" class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" th:data-bs-target="'#removeModal' + ${a.student.id}">
+                                    <i class="fas fa-user-minus"></i> Remove
+                                </button>
+
+                                <!-- Remove Modal -->
+                                <div class="modal fade" th:id="'removeModal' + ${a.student.id}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form th:action="@{'/faculty/my-students/' + ${a.student.id} + '/remove'}" method="post">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Remove Student</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body text-start">
+                                                    <p>Are you sure you want to remove <strong th:text="${a.student.fullName}">Student</strong> from your guidance?</p>
+                                                    <label class="form-label fw-bold">Reason (required)</label>
+                                                    <textarea name="reason" class="form-control" rows="3" required placeholder="Provide a reason for removing this student..."></textarea>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-danger">Remove Student</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(assignments)}">
+                            <td th:attr="colspan=${isActive ? 5 : 4}" class="text-center py-5 text-muted">
+                                <i class="fas fa-user-graduate fs-1 d-block mb-3 opacity-50"></i>
+                                No students assigned to you yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

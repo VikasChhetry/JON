@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Guide Assignments',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Guide Assignments</h1>
+            <p>Manage student-faculty guide assignments for <strong class="text-primary" th:text="${hod.branch.name}">Branch</strong></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <!-- Auto-Assign Action -->
+        <div class="content-card mb-4" th:if="${!#lists.isEmpty(unassignedStudents)}">
+            <div class="card-header bg-warning bg-opacity-10">
+                <h2 class="text-warning"><i class="fas fa-magic"></i> Unassigned Students (<span th:text="${#lists.size(unassignedStudents)}">0</span>)</h2>
+            </div>
+            <div class="p-4">
+                <p class="mb-3">The following students have not selected a faculty guide yet. You can manually assign them or trigger auto-assignment.</p>
+                <form th:action="@{/hod/guide-selection/auto-assign}" method="post" class="d-inline">
+                    <button type="submit" class="btn btn-warning" onclick="return confirm('Auto-assign all unassigned students to available faculty?')">
+                        <i class="fas fa-magic"></i> Auto-Assign All
+                    </button>
+                </form>
+            </div>
+
+            <!-- Manual Assignment -->
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Email</th>
+                            <th>Assign To</th>
+                            <th>Reason</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="student : ${unassignedStudents}">
+                            <td class="fw-bold" th:text="${student.fullName}">Name</td>
+                            <td class="text-muted" th:text="${student.email}">email</td>
+                            <td colspan="3">
+                                <form th:action="@{/hod/guide-selection/assign}" method="post" class="d-flex gap-2 align-items-center">
+                                    <input type="hidden" name="studentId" th:value="${student.id}">
+                                    <select name="facultyId" class="form-select form-select-sm" style="width: 200px;" required>
+                                        <option value="">-- Select Faculty --</option>
+                                        <option th:each="f : ${faculty}" th:value="${f.id}" th:text="${f.fullName + ' (' + f.maxGuidingCapacity + ' max)'}">Faculty</option>
+                                    </select>
+                                    <input type="text" name="reason" class="form-control form-control-sm" style="width: 200px;" placeholder="Reason" required>
+                                    <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-check"></i> Assign</button>
+                                </form>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Current Assignments -->
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-link"></i> Current Assignments (<span th:text="${#lists.size(assignments)}">0</span>)</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            <th>Assigned Faculty</th>
+                            <th>Assigned By</th>
+                            <th>Date</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="a : ${assignments}">
+                            <td class="fw-bold" th:text="${a.student.fullName}">Student</td>
+                            <td th:text="${a.faculty.fullName}">Faculty</td>
+                            <td>
+                                <span class="badge" th:classappend="${a.assignedBy == 'STUDENT' ? 'bg-info' : (a.assignedBy == 'HOD' ? 'bg-primary' : 'bg-secondary')}" th:text="${a.assignedBy}">BY</span>
+                            </td>
+                            <td th:text="${#temporals.format(a.assignedAt, 'dd MMM yyyy, hh:mm a')}">Date</td>
+                            <td class="text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <!-- Reassign -->
+                                    <form th:action="@{/hod/guide-selection/reassign}" method="post" class="d-flex gap-1">
+                                        <input type="hidden" name="studentId" th:value="${a.student.id}">
+                                        <select name="newFacultyId" class="form-select form-select-sm" style="width: 150px;" required>
+                                            <option value="">Reassign to...</option>
+                                            <option th:each="f : ${faculty}" th:value="${f.id}" th:text="${f.fullName}">Faculty</option>
+                                        </select>
+                                        <input type="hidden" name="reason" value="HOD reassignment">
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="Reassign"><i class="fas fa-exchange-alt"></i></button>
+                                    </form>
+
+                                    <!-- Remove -->
+                                    <form th:action="@{'/hod/guide-selection/remove/' + ${a.student.id}}" method="post">
+                                        <input type="hidden" name="reason" value="HOD removed assignment">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove" onclick="return confirm('Remove this assignment?')"><i class="fas fa-times"></i></button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(assignments)}">
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="fas fa-users-slash fs-1 d-block mb-3 opacity-50"></i>
+                                No guide assignments yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <a th:href="@{/hod/guide-selection}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back to Guide Selection</a>
+            <a th:href="@{/hod/guide-selection/history}" class="btn btn-outline-primary ms-2"><i class="fas fa-history"></i> View Audit Log</a>
+        </div>
+    </main>
+</body>
+</html>

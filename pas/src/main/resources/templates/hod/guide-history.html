@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Guide Assignment History',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Guide Assignment Audit Log</h1>
+            <p>Complete history of all guide assignment actions for <strong class="text-primary" th:text="${hod.branch.name}">Branch</strong></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-history"></i> Audit Trail</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Action</th>
+                            <th>Performed By</th>
+                            <th>Role</th>
+                            <th>Student</th>
+                            <th>Previous Faculty</th>
+                            <th>New Faculty</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="h : ${history}">
+                            <td class="text-muted small" th:text="${#temporals.format(h.timestamp, 'dd MMM yyyy, hh:mm a')}">Date</td>
+                            <td class="fw-bold" th:text="${h.action}">Action</td>
+                            <td th:text="${h.performedBy.fullName}">User</td>
+                            <td><span class="badge bg-secondary" th:text="${h.performerRole}">Role</span></td>
+                            <td th:text="${h.student.fullName}">Student</td>
+                            <td th:text="${h.previousFaculty != null ? h.previousFaculty.fullName : '-'}">Old</td>
+                            <td th:text="${h.newFaculty != null ? h.newFaculty.fullName : '-'}">New</td>
+                            <td class="small" th:text="${h.reason}">Reason</td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(history)}">
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <i class="fas fa-clipboard-check fs-1 d-block mb-3 opacity-50"></i>
+                                No guide assignment history yet.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <a th:href="@{/hod/guide-selection}" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> Back to Guide Selection</a>
+        </div>
+    </main>
+</body>
+</html>

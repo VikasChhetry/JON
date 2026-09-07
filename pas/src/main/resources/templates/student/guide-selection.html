@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Select Faculty Guide',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Faculty Guide Selection</h1>
+            <p>Select your project guide from the available faculty members</p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <!-- Already Assigned Banner -->
+        <div class="content-card mb-4" th:if="${hasGuide}">
+            <div class="card-header bg-success bg-opacity-10">
+                <h2 class="text-success"><i class="fas fa-check-circle"></i> Guide Assigned</h2>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h4>Your Faculty Guide</h4>
+                        <div class="d-flex align-items-center gap-3 mt-3">
+                            <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                                <i class="fas fa-user-tie"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold fs-5" th:text="${assignment.faculty.fullName}">Faculty Name</div>
+                                <div class="text-muted" th:text="${assignment.faculty.email}">email</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h4>Assignment Details</h4>
+                        <p class="mt-3"><strong>Assigned:</strong> <span th:text="${#temporals.format(assignment.assignedAt, 'dd MMM yyyy, hh:mm a')}">Date</span></p>
+                        <p><strong>Method:</strong> <span class="badge bg-info" th:text="${assignment.assignedBy}">BY</span></p>
+                    </div>
+                </div>
+                <div class="mt-3 p-3 bg-light rounded">
+                    <i class="fas fa-info-circle text-primary"></i>
+                    You can now <a th:href="@{/student/project/new}">propose your project idea</a> or <a th:href="@{/student/topics}">select a topic</a>. Your project will be reviewed by your assigned guide.
+                </div>
+            </div>
+        </div>
+
+        <!-- No Form Available -->
+        <div class="content-card mb-4" th:if="${activeForm == null and !hasGuide}">
+            <div class="p-5 text-center">
+                <i class="fas fa-hourglass-half fs-1 text-muted d-block mb-3"></i>
+                <h3>Guide Selection Not Available</h3>
+                <p class="text-muted">The HOD has not created a guide selection form yet. Please check back later.</p>
+            </div>
+        </div>
+
+        <!-- Selection Not Yet Open -->
+        <div class="content-card mb-4" th:if="${activeForm != null and !isActive and !isEnded and !hasGuide}">
+            <div class="p-5 text-center">
+                <i class="fas fa-clock fs-1 text-warning d-block mb-3"></i>
+                <h3>Selection Period Not Yet Open</h3>
+                <p class="text-muted">Guide selection opens on <strong th:text="${#temporals.format(activeForm.startDateTime, 'dd MMM yyyy, hh:mm a')}">Date</strong></p>
+            </div>
+        </div>
+
+        <!-- Selection Period Ended -->
+        <div class="content-card mb-4" th:if="${activeForm != null and isEnded and !hasGuide}">
+            <div class="p-5 text-center">
+                <i class="fas fa-lock fs-1 text-danger d-block mb-3"></i>
+                <h3>Selection Period Has Ended</h3>
+                <p class="text-muted">The guide selection deadline has passed. Please contact your HOD for guide assignment.</p>
+            </div>
+        </div>
+
+        <!-- Active Selection — Faculty List -->
+        <div class="content-card mb-4" th:if="${activeForm != null and isActive and !hasGuide}">
+            <div class="card-header bg-success bg-opacity-10">
+                <h2 class="text-success"><i class="fas fa-user-tie"></i> Available Faculty Guides</h2>
+            </div>
+            <div class="p-3">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Selection is open until <strong th:text="${#temporals.format(activeForm.endDateTime, 'dd MMM yyyy, hh:mm a')}">Date</strong>. Choose your preferred faculty guide below.
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Faculty Name</th>
+                            <th>Email</th>
+                            <th>Max Capacity</th>
+                            <th>Assigned</th>
+                            <th>Vacancies</th>
+                            <th>Status</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="info : ${facultyInfo}" th:if="${info.maxCapacity > 0}">
+                            <td class="fw-bold" th:text="${info.faculty.fullName}">Name</td>
+                            <td class="text-muted" th:text="${info.faculty.email}">email</td>
+                            <td th:text="${info.maxCapacity}">0</td>
+                            <td th:text="${info.assignedCount}">0</td>
+                            <td th:text="${info.vacancies}">0</td>
+                            <td>
+                                <span class="badge bg-success" th:if="${info.available}">Available</span>
+                                <span class="badge bg-danger" th:if="${!info.available}">Full</span>
+                            </td>
+                            <td class="text-end">
+                                <form th:if="${info.available}" th:action="@{'/student/guide-selection/select/' + ${info.faculty.id}}" method="post">
+                                    <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('Are you sure you want to select this faculty as your guide?')">
+                                        <i class="fas fa-check"></i> Select
+                                    </button>
+                                </form>
+                                <span th:if="${!info.available}" class="text-muted">No vacancies</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(facultyInfo)}">
+                            <td colspan="7" class="text-center py-4 text-muted">No faculty available for guiding.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

@@ -96,8 +96,10 @@ public class AdminController {
 
     @GetMapping("/users/new")
     public String newUserForm(Model model) {
+        model.addAttribute("user", new User());
         model.addAttribute("branches", branchService.getAllBranches());
         model.addAttribute("roles", Role.values());
+        model.addAttribute("isEdit", false);
         return "admin/user-form";
     }
 

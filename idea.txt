@@ -1,0 +1,17 @@
+Project approval workflow:
+
+Student Login → Student Dashboard → Submit Project → Faculty Reviews Project.
+
+If Faculty Approves → Project goes to HOD Reviews.
+
+If Faculty Rejects → Student Edits → Resubmits → Project goes back to Faculty Reviews.
+
+If HOD Approves → Project becomes COMPLETED.
+
+If HOD Rejects → Student Edits → Resubmits → Project goes back to HOD Reviews.
+
+Therefore, every rejection must return the project to the same approval level that rejected it.
+
+
+
+

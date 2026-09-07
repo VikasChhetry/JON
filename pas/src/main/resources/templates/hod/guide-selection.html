@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: html(
+          title='Guide Selection',
+          content=~{::main}
+      )}">
+<body>
+    <main th:fragment="main">
+        <div class="page-header">
+            <h1>Guide Selection Management</h1>
+            <p>Manage faculty guide assignments for <strong class="text-primary" th:text="${hod.branch.name}">Branch</strong></p>
+        </div>
+        
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <!-- Status Banner -->
+        <div class="content-card mb-4" th:if="${activeForm != null}">
+            <div class="card-header" th:classappend="${isActive ? 'bg-success bg-opacity-10' : (isEnded ? 'bg-secondary bg-opacity-10' : 'bg-warning bg-opacity-10')}">
+                <h2>
+                    <i class="fas" th:classappend="${isActive ? 'fa-clock text-success' : (isEnded ? 'fa-lock text-secondary' : 'fa-hourglass-start text-warning')}"></i>
+                    <span th:if="${isActive}"> Selection Period Active</span>
+                    <span th:if="${isEnded}"> Selection Period Ended</span>
+                    <span th:if="${!isActive and !isEnded}"> Selection Period Scheduled</span>
+                </h2>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-4">
+                        <strong>Start:</strong> <span th:text="${#temporals.format(activeForm.startDateTime, 'dd MMM yyyy, hh:mm a')}">Date</span>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>End:</strong> <span th:text="${#temporals.format(activeForm.endDateTime, 'dd MMM yyyy, hh:mm a')}">Date</span>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <a th:href="@{'/hod/guide-selection/form'}" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> Edit Form</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-card mb-4" th:if="${activeForm == null}">
+            <div class="p-5 text-center">
+                <i class="fas fa-clipboard-list fs-1 text-muted mb-3 d-block"></i>
+                <h3>No Guide Selection Form Created</h3>
+                <p class="text-muted">Create a guide selection form to allow students to choose their faculty guide.</p>
+                <a th:href="@{/hod/guide-selection/form}" class="btn btn-primary mt-2"><i class="fas fa-plus"></i> Create Form</a>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                <div class="stat-value" th:text="${totalStudents}">0</div>
+                <div class="stat-label">Total Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green"><i class="fas fa-user-check"></i></div>
+                <div class="stat-value" th:text="${assignedCount}">0</div>
+                <div class="stat-label">Assigned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber"><i class="fas fa-user-clock"></i></div>
+                <div class="stat-value" th:text="${unassignedCount}">0</div>
+                <div class="stat-label">Unassigned</div>
+            </div>
+        </div>
+
+        <!-- Faculty Capacity Overview -->
+        <div class="content-card mb-4">
+            <div class="card-header bg-primary bg-opacity-10">
+                <h2 class="text-primary"><i class="fas fa-chalkboard-teacher"></i> Faculty Capacity</h2>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Faculty Name</th>
+                            <th>Max Capacity</th>
+                            <th>Assigned</th>
+                            <th>Vacancies</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="info : ${facultyInfo}">
+                            <td class="fw-bold" th:text="${info.faculty.fullName}">Name</td>
+                            <td th:text="${info.maxCapacity}">0</td>
+                            <td th:text="${info.assignedCount}">0</td>
+                            <td th:text="${info.vacancies}">0</td>
+                            <td>
+                                <span class="badge bg-success" th:if="${info.available}">Available</span>
+                                <span class="badge bg-danger" th:if="${!info.available and info.maxCapacity > 0}">Full</span>
+                                <span class="badge bg-secondary" th:if="${info.maxCapacity == 0}">Not Configured</span>
+                            </td>
+                        </tr>
+                        <tr th:if="${#lists.isEmpty(facultyInfo)}">
+                            <td colspan="5" class="text-center py-4 text-muted">No faculty members in this branch.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="content-card mb-4">
+            <div class="card-header"><h2>Quick Actions</h2></div>
+            <div class="p-4 d-flex flex-wrap gap-3">
+                <a th:href="@{/hod/guide-selection/form}" class="btn btn-primary"><i class="fas fa-edit"></i> Create / Edit Form</a>
+                <a th:href="@{/hod/guide-selection/assignments}" class="btn btn-outline-primary"><i class="fas fa-users-cog"></i> Manage Assignments</a>
+                <a th:href="@{/hod/guide-selection/history}" class="btn btn-outline-secondary"><i class="fas fa-history"></i> View Audit Log</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
