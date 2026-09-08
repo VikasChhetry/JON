@@ -1,75 +1,89 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
-          title='Create Topic',
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
+          title=${isEdit != null and isEdit} ? 'Edit Topic' : 'Create Topic',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="page-header d-flex justify-content-between align-items-center">
             <div>
-                <h1>Create Topic</h1>
-                <p>Add new topics for students to choose from</p>
+                <h1 th:text="${isEdit != null and isEdit} ? 'Edit Topic' : 'Create Topic'">Create Topic</h1>
+                <p
+                    th:text="${isEdit != null and isEdit} ? 'Update topic details' : 'Add new topics for students to choose from'">
+                    Add new topics for students to choose from</p>
             </div>
             <a th:href="@{/hod/topics}" class="btn btn-outline">
                 <i class="fas fa-arrow-left"></i> Back to List
             </a>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
         <div class="row">
-            <!-- Manual Creation Form -->
-            <div class="col-lg-7 mb-4">
+            <!-- Manual Creation/Edit Form -->
+            <div th:classappend="${isEdit != null and isEdit} ? 'col-lg-12 mb-4' : 'col-lg-7 mb-4'">
                 <div class="content-card h-100">
                     <div class="card-header bg-primary bg-opacity-10">
-                        <h2><i class="fas fa-edit me-2 text-primary"></i> Create Manually</h2>
+                        <h2><i class="fas fa-edit me-2 text-primary"></i> <span
+                                th:text="${isEdit != null and isEdit} ? 'Edit Topic' : 'Create Manually'">Create
+                                Manually</span></h2>
                     </div>
                     <div class="card-body">
-                        <form th:action="@{/hod/topics/new}" method="post" data-validate>
+                        <form
+                            th:action="${isEdit != null and isEdit} ? @{'/hod/topics/' + ${topic.id} + '/edit'} : @{/hod/topics/new}"
+                            method="post" data-validate>
                             <div class="form-group mb-3">
                                 <label class="form-label text-primary">Topic Title *</label>
-                                <input type="text" name="title" class="form-control" required maxlength="200">
+                                <input type="text" name="title" class="form-control" required maxlength="200"
+                                    th:value="${isEdit != null and isEdit} ? ${topic.title} : ''">
                             </div>
-                            
+
                             <div class="form-group mb-3">
                                 <label class="form-label text-primary">Description *</label>
-                                <textarea name="description" class="form-control" rows="4" required></textarea>
+                                <textarea name="description" class="form-control" rows="4" required
+                                    th:text="${isEdit != null and isEdit} ? ${topic.description} : ''"></textarea>
                             </div>
-                            
+
                             <div class="row mb-4">
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Category</label>
-                                    <input type="text" name="category" class="form-control" maxlength="100">
+                                    <input type="text" name="category" class="form-control" maxlength="100"
+                                        th:value="${isEdit != null and isEdit} ? ${topic.category} : ''">
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Tech Stack</label>
-                                    <input type="text" name="techStack" class="form-control" maxlength="300">
+                                    <input type="text" name="techStack" class="form-control" maxlength="300"
+                                        th:value="${isEdit != null and isEdit} ? ${topic.techStack} : ''">
                                 </div>
                             </div>
-                            
-                            <button type="submit" class="btn btn-primary w-100">Create Topic</button>
+
+                            <button type="submit" class="btn btn-primary w-100"
+                                th:text="${isEdit != null and isEdit} ? 'Update Topic' : 'Create Topic'">Create
+                                Topic</button>
                         </form>
                     </div>
                 </div>
             </div>
-            
-            <!-- Bulk Upload Form -->
-            <div class="col-lg-5 mb-4">
+
+            <!-- Bulk Upload Form (only for new topics) -->
+            <div class="col-lg-5 mb-4" th:if="${isEdit == null or !isEdit}">
                 <div class="content-card h-100">
                     <div class="card-header bg-info bg-opacity-10">
                         <h2><i class="fas fa-file-csv me-2 text-info"></i> Bulk Upload (CSV)</h2>
                     </div>
                     <div class="card-body d-flex flex-column">
-                        <p class="text-secondary mb-4">Upload multiple topics at once using a CSV file. The file must have a header row.</p>
-                        
+                        <p class="text-secondary mb-4">Upload multiple topics at once using a CSV file. The file must
+                            have a header row.</p>
+
                         <div class="bg-dark p-3 rounded border border-secondary border-opacity-25 mb-4">
                             <strong class="d-block mb-2 fs-6">Required CSV Format:</strong>
                             <code class="text-light">title,description,category,techStack</code><br>
                             <code class="text-light">"AI Bot","A chatbot","AI","Python"</code>
                         </div>
-                        
-                        <form th:action="@{/hod/topics/upload}" method="post" enctype="multipart/form-data" class="mt-auto">
+
+                        <form th:action="@{/hod/topics/upload}" method="post" enctype="multipart/form-data"
+                            class="mt-auto">
                             <div class="form-group mb-4">
                                 <label class="file-upload w-100 d-block">
                                     <input type="file" name="file" class="d-none" accept=".csv" required>
@@ -87,4 +101,5 @@
         </div>
     </main>
 </body>
+
 </html>

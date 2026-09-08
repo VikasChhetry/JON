@@ -2,6 +2,11 @@ package com.project.pas.controller;
 
 import com.project.pas.model.*;
 import com.project.pas.service.*;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
@@ -20,13 +27,16 @@ public class FacultyController {
     private final ProjectTopicService topicService;
     private final UserService userService;
     private final GuideSelectionService guideSelectionService;
+    private final FileStorageService fileStorageService;
 
     public FacultyController(ProjectService projectService, ProjectTopicService topicService,
-                              UserService userService, GuideSelectionService guideSelectionService) {
+            UserService userService, GuideSelectionService guideSelectionService,
+            FileStorageService fileStorageService) {
         this.projectService = projectService;
         this.topicService = topicService;
         this.userService = userService;
         this.guideSelectionService = guideSelectionService;
+        this.fileStorageService = fileStorageService;
     }
 
     private User getCurrentUser(Authentication auth) {
@@ -102,8 +112,8 @@ public class FacultyController {
 
     @PostMapping("/projects/{id}/approve-idea")
     public String approveIdea(Authentication auth, @PathVariable Long id,
-                               @RequestParam(required = false) String comments,
-                               RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -118,9 +128,9 @@ public class FacultyController {
 
     @PostMapping("/projects/{id}/reject-idea")
     public String rejectIdea(Authentication auth, @PathVariable Long id,
-                              @RequestParam(required = false) String comments,
-                              @RequestParam String rejectionReason,
-                              RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            @RequestParam String rejectionReason,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -137,8 +147,8 @@ public class FacultyController {
 
     @PostMapping("/projects/{id}/approve")
     public String approveProject(Authentication auth, @PathVariable Long id,
-                                  @RequestParam(required = false) String comments,
-                                  RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -153,9 +163,9 @@ public class FacultyController {
 
     @PostMapping("/projects/{id}/reject")
     public String rejectProject(Authentication auth, @PathVariable Long id,
-                                 @RequestParam(required = false) String comments,
-                                 @RequestParam String rejectionReason,
-                                 RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            @RequestParam String rejectionReason,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -188,10 +198,10 @@ public class FacultyController {
 
     @PostMapping("/topics/new")
     public String createTopic(Authentication auth,
-                               @RequestParam String title, @RequestParam String description,
-                               @RequestParam(required = false) String category,
-                               @RequestParam(required = false) String techStack,
-                               RedirectAttributes redirect) {
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             topicService.createTopic(title, description, category, techStack, faculty);
@@ -204,7 +214,7 @@ public class FacultyController {
 
     @PostMapping("/topics/upload")
     public String uploadTopics(Authentication auth, @RequestParam MultipartFile file,
-                                RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             List<ProjectTopic> topics = topicService.uploadTopicsFromCsv(file, faculty);
@@ -225,6 +235,123 @@ public class FacultyController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/faculty/topics";
+    }
+
+    @PostMapping("/topics/{id}/delete")
+    public String deleteTopic(Authentication auth, @PathVariable Long id, RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            topicService.deleteTopic(id, faculty);
+            redirect.addFlashAttribute("success", "Topic permanently deleted");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/faculty/topics";
+    }
+
+    @PostMapping("/topics/{id}/restore")
+    public String restoreTopic(Authentication auth, @PathVariable Long id, RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            topicService.restoreTopic(id, faculty);
+            redirect.addFlashAttribute("success", "Topic restored and is now available");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/faculty/topics";
+    }
+
+    @GetMapping("/topics/{id}/edit")
+    public String editTopicForm(Authentication auth, @PathVariable Long id, Model model, RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            ProjectTopic topic = topicService.getTopicById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+
+            // Enforce AVAILABLE status
+            if (topic.getStatus() != TopicStatus.AVAILABLE) {
+                redirect.addFlashAttribute("error",
+                        "Cannot edit topic: topic is currently '" + topic.getStatus().getDisplayName() +
+                                "'. Only topics with 'Available' status can be edited.");
+                return "redirect:/faculty/topics";
+            }
+
+            model.addAttribute("faculty", faculty);
+            model.addAttribute("topic", topic);
+            model.addAttribute("isEdit", true);
+            return "faculty/topic-form";
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/faculty/topics";
+        }
+    }
+
+    @PostMapping("/topics/{id}/edit")
+    public String updateTopic(Authentication auth, @PathVariable Long id,
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            topicService.updateTopic(id, title, description, category, techStack, faculty);
+            redirect.addFlashAttribute("success", "Topic updated successfully!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/faculty/topics";
+    }
+
+    // ==================== File Download ====================
+
+    @GetMapping("/projects/{id}/download/{type}")
+    public ResponseEntity<Resource> downloadFile(Authentication auth, @PathVariable Long id,
+            @PathVariable String type) {
+        User faculty = getCurrentUser(auth);
+        Project project = projectService.getProjectById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        // Branch enforcement
+        if (!project.getBranch().getId().equals(faculty.getBranch().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        // Guide enforcement: only the assigned faculty guide can download
+        if (project.getFacultyGuide() != null &&
+                !project.getFacultyGuide().getId().equals(faculty.getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        String filePath;
+        if ("report".equals(type)) {
+            filePath = project.getReportFilePath();
+        } else if ("source".equals(type)) {
+            filePath = project.getProjectFilePath();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (filePath == null || filePath.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            Path path = fileStorageService.getFilePath(filePath);
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String filename = path.getFileName().toString();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (MalformedURLException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // ==================== My Students (Guide Assignments) ====================
@@ -249,8 +376,8 @@ public class FacultyController {
 
     @PostMapping("/my-students/{studentId}/remove")
     public String removeStudent(Authentication auth, @PathVariable Long studentId,
-                                 @RequestParam String reason,
-                                 RedirectAttributes redirect) {
+            @RequestParam String reason,
+            RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             guideSelectionService.facultyRemoveStudent(faculty, studentId, reason);

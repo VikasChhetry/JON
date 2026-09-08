@@ -36,7 +36,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const comments = document.getElementById('modalComments').value;
 
         if (!reason || reason.trim() === '') {
-            alert('Rejection reason is mandatory!');
+            // Using global modal instead of alert
+            showGlobalAlert('Validation Error', 'Rejection reason is mandatory!');
             return;
         }
 
@@ -54,21 +55,96 @@ document.addEventListener('DOMContentLoaded', function () {
     };
 
     // Close modal on outside click
-    const modal = document.getElementById('rejectModal');
-    if (modal) {
-        modal.addEventListener('click', function (e) {
-            if (e.target === modal) {
+    const rejectModal = document.getElementById('rejectModal');
+    if (rejectModal) {
+        rejectModal.addEventListener('click', function (e) {
+            if (e.target === rejectModal) {
                 closeRejectModal();
             }
         });
     }
 
-    // ===== Approve Confirmation =====
+    // ===== Global Confirmation Modal =====
+    let confirmActionCallback = null;
+    const globalModalEl = document.getElementById('globalConfirmModal');
+    let globalConfirmBsModal = null;
+    if (globalModalEl && window.bootstrap) {
+        globalConfirmBsModal = new bootstrap.Modal(globalModalEl);
+    }
+
+    window.showGlobalConfirm = function (title, message, callback) {
+        if (!globalConfirmBsModal) {
+            // Fallback if bootstrap JS is not loaded yet
+            if (confirm(message)) { callback(); }
+            return;
+        }
+
+        document.getElementById('globalConfirmModalLabel').textContent = title;
+        document.getElementById('globalConfirmModalMessage').textContent = message;
+
+        // Hide cancel button for alerts, show for confirm
+        document.getElementById('globalConfirmModalCancelBtn').style.display = 'inline-block';
+
+        confirmActionCallback = callback;
+        globalConfirmBsModal.show();
+    };
+
+    window.showGlobalAlert = function (title, message) {
+        if (!globalConfirmBsModal) {
+            alert(message);
+            return;
+        }
+
+        document.getElementById('globalConfirmModalLabel').textContent = title;
+        document.getElementById('globalConfirmModalMessage').textContent = message;
+
+        // Hide cancel button for alerts
+        document.getElementById('globalConfirmModalCancelBtn').style.display = 'none';
+
+        confirmActionCallback = null;
+        globalConfirmBsModal.show();
+    };
+
+    const confirmBtn = document.getElementById('globalConfirmModalConfirmBtn');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', function () {
+            if (confirmActionCallback) {
+                confirmActionCallback();
+            }
+            if (globalConfirmBsModal) {
+                globalConfirmBsModal.hide();
+            }
+        });
+    }
+
+    // Bind data-confirm-action="submit" attributes
+    document.querySelectorAll('[data-confirm-action="submit"]').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            if (!form) return;
+
+            const title = this.getAttribute('data-confirm-title') || 'Confirm Action';
+            const message = this.getAttribute('data-confirm-message') || 'Are you sure you want to proceed?';
+
+            showGlobalConfirm(title, message, () => form.submit());
+        });
+    });
+
+    // ===== Legacy Wrapper: Approve Confirmation =====
     window.confirmApprove = function (formId) {
-        if (confirm('Are you sure you want to approve this project?')) {
+        showGlobalConfirm('Approve Project', 'Are you sure you want to approve this project?', () => {
             const form = document.getElementById(formId);
             if (form) form.submit();
-        }
+        });
+    };
+
+    // ===== Legacy Wrapper: Select topic confirmation =====
+    window.confirmSelectTopic = function (formId) {
+        showGlobalConfirm('Select Topic', 'Are you sure you want to select this topic? You can only have one active project at a time.', () => {
+            const form = document.getElementById(formId);
+            if (form) form.submit();
+        });
     };
 
     // ===== File Upload Label =====
@@ -122,15 +198,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (!isValid) {
                 e.preventDefault();
-                alert('Please fill in all required fields.');
+                showGlobalAlert('Validation Error', 'Please fill in all required fields.');
             }
         });
     });
-
-    // ===== Select topic confirmation =====
-    window.confirmSelectTopic = function (formId) {
-        if (confirm('Are you sure you want to select this topic? You can only have one active project at a time.')) {
-            document.getElementById(formId).submit();
-        }
-    };
 });

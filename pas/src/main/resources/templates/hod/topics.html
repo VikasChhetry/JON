@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
           title='Manage Topics',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="page-header d-flex justify-content-between align-items-center">
@@ -15,7 +15,7 @@
                 <i class="fas fa-plus"></i> Create Topic
             </a>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
         <div class="content-card">
@@ -37,15 +37,47 @@
                             <td th:text="${topic.category}">Category</td>
                             <td th:text="${topic.techStack}">Tech Stack</td>
                             <td>
-                                <span class="badge" th:classappend="${topic.status.name() == 'AVAILABLE' ? 'bg-success' : (topic.status.name() == 'ASSIGNED' ? 'bg-info' : 'bg-secondary')}" th:text="${topic.status.displayName}">STATUS</span>
+                                <span class="badge"
+                                    th:classappend="${topic.status.name() == 'AVAILABLE' ? 'bg-success' : (topic.status.name() == 'ASSIGNED' ? 'bg-info' : 'bg-secondary')}"
+                                    th:text="${topic.status.displayName}">STATUS</span>
                             </td>
                             <td th:text="${topic.createdBy.fullName}">Creator</td>
                             <td class="text-end">
-                                <form th:if="${topic.status.name() == 'AVAILABLE'}" th:action="@{'/hod/topics/' + ${topic.id} + '/archive'}" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to archive this topic?');">
-                                    <button type="submit" class="btn btn-sm btn-outline text-warning" title="Archive Topic">
-                                        <i class="fas fa-archive"></i>
-                                    </button>
-                                </form>
+                                <div th:if="${topic.status.name() == 'AVAILABLE'}" class="d-inline-flex gap-1">
+                                    <a th:href="@{'/hod/topics/' + ${topic.id} + '/edit'}"
+                                        class="btn btn-sm btn-outline text-info" title="Edit Topic">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form th:action="@{'/hod/topics/' + ${topic.id} + '/archive'}" method="post"
+                                        class="d-inline">
+                                        <button type="button" class="btn btn-sm btn-outline text-warning"
+                                            title="Archive Topic" data-confirm-action="submit"
+                                            data-confirm-title="Archive Topic"
+                                            data-confirm-message="Are you sure you want to archive this topic? It will no longer be available for students.">
+                                            <i class="fas fa-archive"></i>
+                                        </button>
+                                    </form>
+                                    <form th:action="@{'/hod/topics/' + ${topic.id} + '/delete'}" method="post"
+                                        class="d-inline">
+                                        <button type="button" class="btn btn-sm btn-outline text-danger"
+                                            title="Delete Topic" data-confirm-action="submit"
+                                            data-confirm-title="Delete Topic"
+                                            data-confirm-message="Are you sure you want to permanently delete this topic?">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                                <div th:if="${topic.status.name() == 'ARCHIVED'}" class="d-inline-flex gap-1">
+                                    <form th:action="@{'/hod/topics/' + ${topic.id} + '/restore'}" method="post"
+                                        class="d-inline">
+                                        <button type="button" class="btn btn-sm btn-outline text-success"
+                                            title="Restore Topic" data-confirm-action="submit"
+                                            data-confirm-title="Restore Topic"
+                                            data-confirm-message="Are you sure you want to restore this topic?">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(topics)}">
@@ -59,4 +91,5 @@
         </div>
     </main>
 </body>
+
 </html>

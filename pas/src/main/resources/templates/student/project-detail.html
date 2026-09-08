@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
           title='Project Details',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="d-flex justify-content-between align-items-start mb-4">
@@ -16,28 +16,29 @@
                     <i class="fas fa-arrow-left"></i> Back to Dashboard
                 </a>
                 <!-- Delete only if faculty hasn't acted yet -->
-                <form th:if="${canDelete}"
-                      th:action="@{'/student/project/' + ${project.id} + '/delete'}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-outline-danger"
-                            onclick="return confirm('Are you sure you want to delete this project? This action cannot be undone.')">
+                <form th:if="${canDelete}" th:action="@{'/student/project/' + ${project.id} + '/delete'}" method="post"
+                    class="d-inline">
+                    <button type="button" class="btn btn-outline-danger" data-confirm-action="submit"
+                        data-confirm-title="Delete Project"
+                        data-confirm-message="Are you sure you want to delete this project? This action cannot be undone.">
                         <i class="fas fa-trash"></i> Delete Project
                     </button>
                 </form>
             </div>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
         <div class="project-hero">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <h2 th:text="${project.title}">Project Title</h2>
                 <span class="status-badge"
-                      th:classappend="${#strings.toLowerCase(project.status.name()).replace('_', '-')}"
-                      th:text="${project.status.displayName}">STATUS</span>
+                    th:classappend="${#strings.toLowerCase(project.status.name()).replace('_', '-')}"
+                    th:text="${project.status.displayName}">STATUS</span>
             </div>
-            
+
             <p class="text-light" style="white-space: pre-wrap;" th:text="${project.description}">Description</p>
-            
+
             <div class="project-meta border-top border-secondary border-opacity-25 pt-3 mt-4">
                 <div class="project-meta-item">
                     <i class="fas fa-tag icon"></i>
@@ -61,15 +62,18 @@
         <div class="row">
             <div class="col-lg-4 order-lg-2">
                 <!-- Action Panel -->
-                <div class="content-card mb-4" th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED' || project.status.name() == 'STUDENT_WORKING' || project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
+                <div class="content-card mb-4"
+                    th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED' || project.status.name() == 'STUDENT_WORKING' || project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
                     <div class="card-header bg-primary bg-opacity-10">
                         <h2>Required Actions</h2>
                     </div>
                     <div class="card-body">
-                        
+
                         <!-- Start Working Action -->
-                        <div th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED'}">
-                            <p class="text-secondary mb-3">Your project is approved to begin. Click below to start working on your implementation.</p>
+                        <div
+                            th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED'}">
+                            <p class="text-secondary mb-3">Your project is approved to begin. Click below to start
+                                working on your implementation.</p>
                             <form th:action="@{'/student/project/' + ${project.id} + '/start-working'}" method="post">
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fas fa-play"></i> Start Working
@@ -79,18 +83,22 @@
 
                         <!-- Submit for Review Action -->
                         <div th:if="${project.status.name() == 'STUDENT_WORKING'}">
-                            <p class="text-secondary mb-3">Ready for review? Submit your completed project files and report.</p>
-                            <a th:href="@{'/student/project/' + ${project.id} + '/submit'}" class="btn btn-success w-100">
+                            <p class="text-secondary mb-3">Ready for review? Submit your completed project files and
+                                report.</p>
+                            <a th:href="@{'/student/project/' + ${project.id} + '/submit'}"
+                                class="btn btn-success w-100">
                                 <i class="fas fa-upload"></i> Submit Project
                             </a>
                         </div>
 
                         <!-- Edit/Resubmit Action -->
-                        <div th:if="${project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
+                        <div
+                            th:if="${project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
                             <div class="alert alert-danger mb-3 p-2 text-sm">
                                 <i class="fas fa-exclamation-triangle"></i> Project requires changes based on feedback.
                             </div>
-                            <a th:href="@{'/student/project/' + ${project.id} + '/edit'}" class="btn btn-warning w-100 text-dark">
+                            <a th:href="@{'/student/project/' + ${project.id} + '/edit'}"
+                                class="btn btn-warning w-100 text-dark">
                                 <i class="fas fa-edit"></i> Edit & Resubmit
                             </a>
                         </div>
@@ -99,19 +107,22 @@
                 </div>
 
                 <!-- Files Panel -->
-                <div class="content-card mb-4" th:if="${project.reportFilePath != null || project.projectFilePath != null}">
+                <div class="content-card mb-4"
+                    th:if="${project.reportFilePath != null || project.projectFilePath != null}">
                     <div class="card-header">
                         <h2>Submitted Files</h2>
                     </div>
                     <div class="card-body">
-                        <div th:if="${project.reportFilePath != null}" class="d-flex align-items-center gap-2 mb-2 p-2 bg-dark rounded">
+                        <div th:if="${project.reportFilePath != null}"
+                            class="d-flex align-items-center gap-2 mb-2 p-2 bg-dark rounded">
                             <i class="fas fa-file-pdf text-danger fs-4"></i>
                             <div>
                                 <div class="fw-bold fs-6">Project Report</div>
                                 <div class="text-muted" style="font-size: 11px;">Uploaded</div>
                             </div>
                         </div>
-                        <div th:if="${project.projectFilePath != null}" class="d-flex align-items-center gap-2 p-2 bg-dark rounded">
+                        <div th:if="${project.projectFilePath != null}"
+                            class="d-flex align-items-center gap-2 p-2 bg-dark rounded">
                             <i class="fas fa-file-archive text-warning fs-4"></i>
                             <div>
                                 <div class="fw-bold fs-6">Project Source</div>
@@ -130,36 +141,45 @@
                     </div>
                     <div class="card-body">
                         <div class="timeline">
-                            <div th:each="hist : ${history}" class="timeline-item"
-                                 th:classappend="${hist.newStatus.name() == 'FACULTY_APPROVED' || hist.newStatus.name() == 'PROJECT_IDEA_APPROVED' ? 'approved' : 
+                            <div th:each="hist : ${history}" class="timeline-item" th:classappend="${hist.newStatus.name() == 'FACULTY_APPROVED' || hist.newStatus.name() == 'PROJECT_IDEA_APPROVED' ? 'approved' : 
                                                  (hist.newStatus.name() == 'FACULTY_REJECTED' || hist.newStatus.name() == 'HOD_REJECTED' ? 'rejected' : 
                                                  (hist.newStatus.name() == 'COMPLETED' ? 'completed' : ''))}">
-                                
+
                                 <div class="timeline-meta">
-                                    <span class="text-primary fw-bold" th:text="${hist.performedBy.fullName}">Name</span>
-                                    <span class="badge bg-secondary" style="font-size: 10px;" th:text="${hist.userRole}">Role</span>
-                                    <span class="float-end" th:text="${#temporals.format(hist.timestamp, 'dd MMM yy, HH:mm')}">Date</span>
-                                </div>
-                                
-                                <div class="timeline-action" th:text="${hist.action}">Action taken</div>
-                                
-                                <div>
-                                    <span class="badge bg-dark border border-secondary text-secondary" style="font-size: 10px;" th:if="${hist.previousStatus != null}" th:text="${hist.previousStatus.displayName}">Old Status</span>
-                                    <i class="fas fa-arrow-right text-muted mx-1" th:if="${hist.previousStatus != null}" style="font-size: 10px;"></i>
-                                    <span class="badge" th:classappend="${hist.newStatus.name().contains('REJECTED') ? 'bg-danger' : (hist.newStatus.name() == 'COMPLETED' ? 'bg-success' : 'bg-primary')}" th:text="${hist.newStatus.displayName}">New Status</span>
+                                    <span class="text-primary fw-bold"
+                                        th:text="${hist.performedBy.fullName}">Name</span>
+                                    <span class="badge bg-secondary" style="font-size: 10px;"
+                                        th:text="${hist.userRole}">Role</span>
+                                    <span class="float-end"
+                                        th:text="${#temporals.format(hist.timestamp, 'dd MMM yy, HH:mm')}">Date</span>
                                 </div>
 
-                                <div class="timeline-comment" th:if="${hist.comments != null and !hist.comments.isEmpty()}">
-                                    <strong><i class="fas fa-comment-dots"></i> Comments:</strong> 
+                                <div class="timeline-action" th:text="${hist.action}">Action taken</div>
+
+                                <div>
+                                    <span class="badge bg-dark border border-secondary text-secondary"
+                                        style="font-size: 10px;" th:if="${hist.previousStatus != null}"
+                                        th:text="${hist.previousStatus.displayName}">Old Status</span>
+                                    <i class="fas fa-arrow-right text-muted mx-1" th:if="${hist.previousStatus != null}"
+                                        style="font-size: 10px;"></i>
+                                    <span class="badge"
+                                        th:classappend="${hist.newStatus.name().contains('REJECTED') ? 'bg-danger' : (hist.newStatus.name() == 'COMPLETED' ? 'bg-success' : 'bg-primary')}"
+                                        th:text="${hist.newStatus.displayName}">New Status</span>
+                                </div>
+
+                                <div class="timeline-comment"
+                                    th:if="${hist.comments != null and !hist.comments.isEmpty()}">
+                                    <strong><i class="fas fa-comment-dots"></i> Comments:</strong>
                                     <span th:text="${hist.comments}">Comment</span>
                                 </div>
-                                
-                                <div class="timeline-rejection" th:if="${hist.rejectionReason != null and !hist.rejectionReason.isEmpty()}">
-                                    <strong><i class="fas fa-exclamation-circle"></i> Rejection Reason:</strong> 
+
+                                <div class="timeline-rejection"
+                                    th:if="${hist.rejectionReason != null and !hist.rejectionReason.isEmpty()}">
+                                    <strong><i class="fas fa-exclamation-circle"></i> Rejection Reason:</strong>
                                     <span th:text="${hist.rejectionReason}">Reason</span>
                                 </div>
                             </div>
-                            
+
                             <div th:if="${#lists.isEmpty(history)}" class="text-muted py-3">
                                 No history available.
                             </div>
@@ -170,4 +190,5 @@
         </div>
     </main>
 </body>
+
 </html>

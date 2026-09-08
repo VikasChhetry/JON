@@ -2,6 +2,11 @@ package com.project.pas.controller;
 
 import com.project.pas.model.*;
 import com.project.pas.service.*;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -9,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.net.MalformedURLException;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -22,13 +29,16 @@ public class HodController {
     private final ProjectTopicService topicService;
     private final UserService userService;
     private final GuideSelectionService guideSelectionService;
+    private final FileStorageService fileStorageService;
 
     public HodController(ProjectService projectService, ProjectTopicService topicService,
-                          UserService userService, GuideSelectionService guideSelectionService) {
+            UserService userService, GuideSelectionService guideSelectionService,
+            FileStorageService fileStorageService) {
         this.projectService = projectService;
         this.topicService = topicService;
         this.userService = userService;
         this.guideSelectionService = guideSelectionService;
+        this.fileStorageService = fileStorageService;
     }
 
     private User getCurrentUser(Authentication auth) {
@@ -98,8 +108,8 @@ public class HodController {
 
     @PostMapping("/projects/{id}/approve")
     public String approveProject(Authentication auth, @PathVariable Long id,
-                                  @RequestParam(required = false) String comments,
-                                  RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -114,9 +124,9 @@ public class HodController {
 
     @PostMapping("/projects/{id}/reject")
     public String rejectProject(Authentication auth, @PathVariable Long id,
-                                 @RequestParam(required = false) String comments,
-                                 @RequestParam String rejectionReason,
-                                 RedirectAttributes redirect) {
+            @RequestParam(required = false) String comments,
+            @RequestParam String rejectionReason,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -149,10 +159,10 @@ public class HodController {
 
     @PostMapping("/topics/new")
     public String createTopic(Authentication auth,
-                               @RequestParam String title, @RequestParam String description,
-                               @RequestParam(required = false) String category,
-                               @RequestParam(required = false) String techStack,
-                               RedirectAttributes redirect) {
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             topicService.createTopic(title, description, category, techStack, hod);
@@ -165,7 +175,7 @@ public class HodController {
 
     @PostMapping("/topics/upload")
     public String uploadTopics(Authentication auth, @RequestParam MultipartFile file,
-                                RedirectAttributes redirect) {
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             List<ProjectTopic> topics = topicService.uploadTopicsFromCsv(file, hod);
@@ -186,6 +196,117 @@ public class HodController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/hod/topics";
+    }
+
+    @PostMapping("/topics/{id}/delete")
+    public String deleteTopic(Authentication auth, @PathVariable Long id, RedirectAttributes redirect) {
+        User hod = getCurrentUser(auth);
+        try {
+            topicService.deleteTopic(id, hod);
+            redirect.addFlashAttribute("success", "Topic permanently deleted");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/hod/topics";
+    }
+
+    @PostMapping("/topics/{id}/restore")
+    public String restoreTopic(Authentication auth, @PathVariable Long id, RedirectAttributes redirect) {
+        User hod = getCurrentUser(auth);
+        try {
+            topicService.restoreTopic(id, hod);
+            redirect.addFlashAttribute("success", "Topic restored and is now available");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/hod/topics";
+    }
+
+    @GetMapping("/topics/{id}/edit")
+    public String editTopicForm(Authentication auth, @PathVariable Long id, Model model, RedirectAttributes redirect) {
+        User hod = getCurrentUser(auth);
+        try {
+            ProjectTopic topic = topicService.getTopicById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+
+            // Enforce AVAILABLE status
+            if (topic.getStatus() != TopicStatus.AVAILABLE) {
+                redirect.addFlashAttribute("error",
+                        "Cannot edit topic: topic is currently '" + topic.getStatus().getDisplayName() +
+                                "'. Only topics with 'Available' status can be edited.");
+                return "redirect:/hod/topics";
+            }
+
+            model.addAttribute("hod", hod);
+            model.addAttribute("topic", topic);
+            model.addAttribute("isEdit", true);
+            return "hod/topic-form";
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+            return "redirect:/hod/topics";
+        }
+    }
+
+    @PostMapping("/topics/{id}/edit")
+    public String updateTopic(Authentication auth, @PathVariable Long id,
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            RedirectAttributes redirect) {
+        User hod = getCurrentUser(auth);
+        try {
+            topicService.updateTopic(id, title, description, category, techStack, hod);
+            redirect.addFlashAttribute("success", "Topic updated successfully!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/hod/topics";
+    }
+
+    // ==================== File Download ====================
+
+    @GetMapping("/projects/{id}/download/{type}")
+    public ResponseEntity<Resource> downloadFile(Authentication auth, @PathVariable Long id,
+            @PathVariable String type) {
+        User hod = getCurrentUser(auth);
+        Project project = projectService.getProjectById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        // Branch enforcement
+        if (!project.getBranch().getId().equals(hod.getBranch().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        String filePath;
+        if ("report".equals(type)) {
+            filePath = project.getReportFilePath();
+        } else if ("source".equals(type)) {
+            filePath = project.getProjectFilePath();
+        } else {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (filePath == null || filePath.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        try {
+            Path path = fileStorageService.getFilePath(filePath);
+            Resource resource = new UrlResource(path.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            String filename = path.getFileName().toString();
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (MalformedURLException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     // ==================== Guide Selection Management ====================
@@ -232,9 +353,9 @@ public class HodController {
 
     @PostMapping("/guide-selection/form")
     public String saveGuideForm(Authentication auth,
-                                 @RequestParam String startDateTime,
-                                 @RequestParam String endDateTime,
-                                 RedirectAttributes redirect) {
+            @RequestParam String startDateTime,
+            @RequestParam String endDateTime,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             LocalDateTime start = LocalDateTime.parse(startDateTime);
@@ -249,9 +370,9 @@ public class HodController {
 
     @PostMapping("/guide-selection/form/{id}/update")
     public String updateGuideForm(Authentication auth, @PathVariable Long id,
-                                   @RequestParam String startDateTime,
-                                   @RequestParam String endDateTime,
-                                   RedirectAttributes redirect) {
+            @RequestParam String startDateTime,
+            @RequestParam String endDateTime,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             LocalDateTime start = LocalDateTime.parse(startDateTime);
@@ -266,8 +387,8 @@ public class HodController {
 
     @PostMapping("/guide-selection/faculty/{id}/capacity")
     public String setFacultyCapacity(Authentication auth, @PathVariable Long id,
-                                      @RequestParam int maxCapacity,
-                                      RedirectAttributes redirect) {
+            @RequestParam int maxCapacity,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             guideSelectionService.updateFacultyCapacity(hod, id, maxCapacity);
@@ -300,10 +421,10 @@ public class HodController {
 
     @PostMapping("/guide-selection/assign")
     public String hodAssign(Authentication auth,
-                             @RequestParam Long studentId,
-                             @RequestParam Long facultyId,
-                             @RequestParam String reason,
-                             RedirectAttributes redirect) {
+            @RequestParam Long studentId,
+            @RequestParam Long facultyId,
+            @RequestParam String reason,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             guideSelectionService.hodAssignStudent(hod, studentId, facultyId, reason);
@@ -316,8 +437,8 @@ public class HodController {
 
     @PostMapping("/guide-selection/remove/{studentId}")
     public String hodRemove(Authentication auth, @PathVariable Long studentId,
-                             @RequestParam String reason,
-                             RedirectAttributes redirect) {
+            @RequestParam String reason,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             guideSelectionService.hodRemoveStudent(hod, studentId, reason);
@@ -330,10 +451,10 @@ public class HodController {
 
     @PostMapping("/guide-selection/reassign")
     public String hodReassign(Authentication auth,
-                               @RequestParam Long studentId,
-                               @RequestParam Long newFacultyId,
-                               @RequestParam String reason,
-                               RedirectAttributes redirect) {
+            @RequestParam Long studentId,
+            @RequestParam Long newFacultyId,
+            @RequestParam String reason,
+            RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
             guideSelectionService.hodReassignStudent(hod, studentId, newFacultyId, reason);

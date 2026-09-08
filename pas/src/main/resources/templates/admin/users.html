@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
           title='Manage Users',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="page-header d-flex justify-content-between align-items-center">
@@ -15,17 +15,20 @@
                 <i class="fas fa-plus"></i> Add User
             </a>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
-        
+
         <div th:if="${bulkResult != null}" class="content-card mb-4" style="border-left: 4px solid var(--primary);">
             <h5>Bulk Upload Results</h5>
             <p>
-                <strong>Total Processed:</strong> <span th:text="${bulkResult.totalProcessed}">0</span> | 
-                <strong class="text-success">Success:</strong> <span class="text-success" th:text="${bulkResult.successCount}">0</span> | 
-                <strong class="text-danger">Failed:</strong> <span class="text-danger" th:text="${bulkResult.failedCount}">0</span>
+                <strong>Total Processed:</strong> <span th:text="${bulkResult.totalProcessed}">0</span> |
+                <strong class="text-success">Success:</strong> <span class="text-success"
+                    th:text="${bulkResult.successCount}">0</span> |
+                <strong class="text-danger">Failed:</strong> <span class="text-danger"
+                    th:text="${bulkResult.failedCount}">0</span>
             </p>
-            <div th:if="${not #lists.isEmpty(bulkResult.errors)}" class="alert alert-warning" style="max-height: 200px; overflow-y: auto;">
+            <div th:if="${not #lists.isEmpty(bulkResult.errors)}" class="alert alert-warning"
+                style="max-height: 200px; overflow-y: auto;">
                 <strong>Errors:</strong>
                 <ul class="mb-0 mt-2">
                     <li th:each="error : ${bulkResult.errors}" th:text="${error}">Error details</li>
@@ -37,9 +40,11 @@
             <h5 class="mb-3">Bulk User Upload</h5>
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <form th:action="@{/admin/users/upload}" method="post" enctype="multipart/form-data" class="d-flex align-items-center">
+                    <form th:action="@{/admin/users/upload}" method="post" enctype="multipart/form-data"
+                        class="d-flex align-items-center">
                         <input type="file" name="file" class="form-control me-2" accept=".csv" required>
-                        <button type="submit" class="btn btn-primary text-nowrap"><i class="fas fa-upload"></i> Upload CSV</button>
+                        <button type="submit" class="btn btn-primary text-nowrap"><i class="fas fa-upload"></i> Upload
+                            CSV</button>
                     </form>
                 </div>
                 <div class="col-md-6 text-md-end mt-3 mt-md-0">
@@ -68,32 +73,34 @@
                             <td class="fw-bold" th:text="${user.fullName}">Name</td>
                             <td th:text="${user.email}">Email</td>
                             <td>
-                                <span class="badge" 
-                                      th:classappend="${user.role.name() == 'ADMIN' ? 'bg-danger' : 
+                                <span class="badge" th:classappend="${user.role.name() == 'ADMIN' ? 'bg-danger' : 
                                                       (user.role.name() == 'STUDENT' ? 'bg-info' : 
                                                       (user.role.name() == 'FACULTY' ? 'bg-success' : 'bg-warning'))}"
-                                      th:text="${user.role.name()}">ROLE</span>
+                                    th:text="${user.role.name()}">ROLE</span>
                             </td>
                             <td th:text="${user.branch != null ? user.branch.code : '-'}">Branch</td>
                             <td>
                                 <span class="badge" th:classappend="${user.enabled ? 'bg-success' : 'bg-secondary'}"
-                                      th:text="${user.enabled ? 'Active' : 'Disabled'}">Status</span>
+                                    th:text="${user.enabled ? 'Active' : 'Disabled'}">Status</span>
                             </td>
                             <td class="text-end">
                                 <a th:href="@{'/admin/users/edit/' + ${user.id}}" class="btn btn-sm btn-outline me-1">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <form th:action="@{'/admin/users/' + ${user.id} + '/toggle'}" method="post" class="d-inline">
-                                    <button type="submit" class="btn btn-sm" th:classappend="${user.enabled ? 'btn-outline' : 'btn-success'}"
-                                            th:title="${user.enabled ? 'Disable User' : 'Enable User'}"
-                                            th:disabled="${user.email == 'admin@pas.com'}">
+                                <form th:action="@{'/admin/users/' + ${user.id} + '/toggle'}" method="post"
+                                    class="d-inline">
+                                    <button type="submit" class="btn btn-sm"
+                                        th:classappend="${user.enabled ? 'btn-outline' : 'btn-success'}"
+                                        th:title="${user.enabled ? 'Disable User' : 'Enable User'}"
+                                        th:disabled="${user.email == 'admin@pas.com'}">
                                         <i class="fas" th:classappend="${user.enabled ? 'fa-ban' : 'fa-check'}"></i>
                                     </button>
                                 </form>
-                                <form th:action="@{'/admin/users/' + ${user.id} + '/delete'}" method="post" class="d-inline"
-                                      th:if="${user.email != 'admin@pas.com'}">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete User"
-                                            onclick="return confirm('Permanently delete this user? This cannot be undone.')">
+                                <form th:action="@{'/admin/users/' + ${user.id} + '/delete'}" method="post"
+                                    class="d-inline" th:if="${user.email != 'admin@pas.com'}">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" title="Delete User"
+                                        data-confirm-action="submit" data-confirm-title="Delete User"
+                                        data-confirm-message="Permanently delete this user? This cannot be undone.">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
@@ -110,4 +117,5 @@
         </div>
     </main>
 </body>
+
 </html>

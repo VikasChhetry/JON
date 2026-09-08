@@ -45,7 +45,7 @@ public class ProjectTopicService {
      * Branch enforcement: creator's branch must match the topic's branch.
      */
     public ProjectTopic createTopic(String title, String description, String category,
-                                     String techStack, User creator) {
+            String techStack, User creator) {
         validateBranchAccess(creator);
 
         ProjectTopic topic = new ProjectTopic();
@@ -74,10 +74,12 @@ public class ProjectTopicService {
         // Skip header line
         for (int i = 1; i < lines.size(); i++) {
             String line = lines.get(i).trim();
-            if (line.isEmpty()) continue;
+            if (line.isEmpty())
+                continue;
 
             String[] parts = parseCsvLine(line);
-            if (parts.length < 2) continue; // Need at least title and description
+            if (parts.length < 2)
+                continue; // Need at least title and description
 
             ProjectTopic topic = new ProjectTopic();
             topic.setTitle(parts[0].trim());
@@ -103,7 +105,8 @@ public class ProjectTopicService {
     }
 
     /**
-     * Release an assigned topic back to available (e.g., when a project is deleted).
+     * Release an assigned topic back to available (e.g., when a project is
+     * deleted).
      */
     public void releaseAssigned(ProjectTopic topic) {
         topic.setStatus(TopicStatus.AVAILABLE);
@@ -111,14 +114,75 @@ public class ProjectTopicService {
     }
 
     /**
-     * Archive a topic.
+     * Archive a topic. Only allowed if status is AVAILABLE.
      */
     public void archiveTopic(Long id, User user) {
         ProjectTopic topic = topicRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
         validateBranchMatch(user, topic.getBranch());
+
+        if (topic.getStatus() != TopicStatus.AVAILABLE) {
+            throw new IllegalStateException("Cannot archive topic: it is currently " +
+                    topic.getStatus().name() + ". Only AVAILABLE topics can be archived.");
+        }
         topic.setStatus(TopicStatus.ARCHIVED);
         topicRepository.save(topic);
+    }
+
+    /**
+     * Delete a topic permanently. Only allowed if status is AVAILABLE.
+     */
+    public void deleteTopic(Long id, User user) {
+        ProjectTopic topic = topicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+        validateBranchMatch(user, topic.getBranch());
+
+        if (topic.getStatus() != TopicStatus.AVAILABLE) {
+            throw new IllegalStateException("Cannot delete topic: it is currently " +
+                    topic.getStatus().name() + ". Only AVAILABLE topics can be deleted.");
+        }
+        topicRepository.delete(topic);
+    }
+
+    /**
+     * Restore an archived topic. Only allowed if status is ARCHIVED.
+     */
+    public void restoreTopic(Long id, User user) {
+        ProjectTopic topic = topicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+        validateBranchMatch(user, topic.getBranch());
+
+        if (topic.getStatus() != TopicStatus.ARCHIVED) {
+            throw new IllegalStateException("Cannot restore topic: it is currently " +
+                    topic.getStatus().name() + ". Only ARCHIVED topics can be restored.");
+        }
+        topic.setStatus(TopicStatus.AVAILABLE);
+        topicRepository.save(topic);
+    }
+
+    /**
+     * Update an existing topic.
+     * Editing is ONLY allowed when status is AVAILABLE.
+     */
+    public ProjectTopic updateTopic(Long id, String title, String description,
+            String category, String techStack, User user) {
+        validateBranchAccess(user);
+
+        ProjectTopic topic = topicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Topic not found"));
+        validateBranchMatch(user, topic.getBranch());
+
+        if (topic.getStatus() != TopicStatus.AVAILABLE) {
+            throw new IllegalStateException(
+                    "Cannot edit topic: topic is currently '" + topic.getStatus().getDisplayName() +
+                            "'. Only topics with 'Available' status can be edited.");
+        }
+
+        topic.setTitle(title);
+        topic.setDescription(description);
+        topic.setCategory(category);
+        topic.setTechStack(techStack);
+        return topicRepository.save(topic);
     }
 
     public long countByBranch(Branch branch) {
