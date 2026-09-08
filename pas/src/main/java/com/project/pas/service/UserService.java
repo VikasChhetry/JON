@@ -23,11 +23,14 @@ public class UserService {
     private final ProjectTopicRepository projectTopicRepository;
     private final GuideSelectionFormRepository formRepository;
     private final GuideAssignmentHistoryRepository guideHistoryRepository;
+    private final FileStorageService fileStorageService;
+    private final BranchRepository branchRepository;
 
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        ProjectRepository projectRepository, GuideAssignmentRepository guideAssignmentRepository,
                        ApprovalHistoryRepository approvalHistoryRepository, ProjectTopicRepository projectTopicRepository,
-                       GuideSelectionFormRepository formRepository, GuideAssignmentHistoryRepository guideHistoryRepository) {
+                       GuideSelectionFormRepository formRepository, GuideAssignmentHistoryRepository guideHistoryRepository,
+                       FileStorageService fileStorageService, BranchRepository branchRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.projectRepository = projectRepository;
@@ -36,6 +39,8 @@ public class UserService {
         this.projectTopicRepository = projectTopicRepository;
         this.formRepository = formRepository;
         this.guideHistoryRepository = guideHistoryRepository;
+        this.fileStorageService = fileStorageService;
+        this.branchRepository = branchRepository;
     }
 
     public List<User> getAllUsers() {
@@ -140,5 +145,102 @@ public class UserService {
         }
 
         userRepository.delete(user);
+    }
+
+    public static class BulkUserUploadResult {
+        private int totalProcessed;
+        private int successCount;
+        private int failedCount;
+        private List<String> errors = new java.util.ArrayList<>();
+
+        public int getTotalProcessed() { return totalProcessed; }
+        public int getSuccessCount() { return successCount; }
+        public int getFailedCount() { return failedCount; }
+        public List<String> getErrors() { return errors; }
+
+        public void incrementSuccess() { successCount++; totalProcessed++; }
+        public void addError(int rowNum, String error) { errors.add("Row " + rowNum + ": " + error); failedCount++; totalProcessed++; }
+    }
+
+    public BulkUserUploadResult uploadUsersFromCsv(org.springframework.web.multipart.MultipartFile file) {
+        BulkUserUploadResult result = new BulkUserUploadResult();
+        List<String> lines = fileStorageService.readCsvLines(file);
+
+        // Skip header line
+        for (int i = 1; i < lines.size(); i++) {
+            String line = lines.get(i).trim();
+            if (line.isEmpty()) continue;
+
+            String[] parts = parseCsvLine(line);
+            if (parts.length < 5) {
+                result.addError(i + 1, "Missing required columns. Expected: fullName, email, role, branch, password");
+                continue;
+            }
+
+            String fullName = parts[0].trim();
+            String email = parts[1].trim();
+            String roleStr = parts[2].trim().toUpperCase();
+            String branchCode = parts[3].trim().toUpperCase();
+            String rawPassword = parts[4].trim();
+
+            if (userRepository.existsByEmail(email)) {
+                result.addError(i + 1, "Email already exists: " + email);
+                continue;
+            }
+
+            Role role;
+            try {
+                role = Role.valueOf(roleStr);
+            } catch (IllegalArgumentException e) {
+                result.addError(i + 1, "Invalid role: " + roleStr);
+                continue;
+            }
+
+            Branch branch = null;
+            if (role != Role.ADMIN) {
+                if (branchCode.isEmpty()) {
+                    result.addError(i + 1, "Branch code is required for role: " + roleStr);
+                    continue;
+                }
+                branch = branchRepository.findByCode(branchCode).orElse(null);
+                if (branch == null) {
+                    result.addError(i + 1, "Invalid branch code: " + branchCode);
+                    continue;
+                }
+
+                if (role == Role.HOD) {
+                    List<User> existingHods = userRepository.findByBranchAndRole(branch, Role.HOD);
+                    if (!existingHods.isEmpty()) {
+                        result.addError(i + 1, "Branch " + branch.getName() + " already has an HOD assigned");
+                        continue;
+                    }
+                }
+            }
+
+            User user = new User(fullName, email, passwordEncoder.encode(rawPassword), role, branch);
+            userRepository.save(user);
+            result.incrementSuccess();
+        }
+
+        return result;
+    }
+
+    private String[] parseCsvLine(String line) {
+        List<String> result = new java.util.ArrayList<>();
+        boolean inQuotes = false;
+        StringBuilder current = new StringBuilder();
+
+        for (char c : line.toCharArray()) {
+            if (c == '"') {
+                inQuotes = !inQuotes;
+            } else if (c == ',' && !inQuotes) {
+                result.add(current.toString());
+                current = new StringBuilder();
+            } else {
+                current.append(c);
+            }
+        }
+        result.add(current.toString());
+        return result.toArray(new String[0]);
     }
 }

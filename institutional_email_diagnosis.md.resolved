@@ -1,0 +1,84 @@
+# 📧 Institutional Email Delivery Diagnosis (@niet.co.in)
+
+## A. Exact Files Changed
+
+| File | Change |
+|---|---|
+| [application.properties](file:///d:/downlodes/JON%20-%20Copy/pas/src/main/resources/application.properties) | Appended `spring.mail.properties.mail.debug=true` to enable raw SMTP tracing in the console. |
+| [EmailService.java](file:///d:/downlodes/JON%20-%20Copy/pas/src/main/java/com/project/pas/service/EmailService.java) | Updated diagnostic logging to clearly state that SMTP success only means Gmail *accepted* the message, not that it arrived. Modified exception handling to expose pure SMTP errors. |
+| [SecurityConfig.java](file:///d:/downlodes/JON%20-%20Copy/pas/src/main/java/com/project/pas/config/SecurityConfig.java) | Disabled CSRF for `/api/**` APIs and added `permitAll` for the `/api/email/test` endpoint so debugging doesn't require complex Spring authentication sessions. |
+| [EmailTestController.java](file:///d:/downlodes/JON%20-%20Copy/pas/src/main/java/com/project/pas/controller/EmailTestController.java) | **NEW** – Implemented `POST /api/email/test` to bypass database validation and isolate the exact moment of SMTP rejection or acceptance. |
+
+---
+
+## B. Cause of the @niet.co.in Problem
+
+Because your Spring Boot application successfully sent emails to `@gmail.com` addresses, the application code, Gmail SMTP configuration, token generation, and the `JavaMailSender` implementation were **functioning perfectly**. 
+
+Since the application logic treats `@niet.co.in` exactly the same as `@gmail.com` (no hardcoded filters were found), and Gmail authentication succeeded, the issue is **downstream of the application**.
+
+When you send mail through Gmail SMTP (`smtp.gmail.com:587`), you are handing the email to Google. Google then acts as your outbound server and attempts to hand it to the NIET servers. If the console logs do not show an outright `MessagingException` or `MailSendException`, then Google **accepted** the message. 
+
+If this happens and the email never arrives in the NIET inbox, the cause is one of the following:
+
+1. **Strict Institutional Filtering (Most Likely):** Institutional firewalls and spam gateways (like Barracuda, Proofpoint, or Office365 rules) often aggressively quarantine emails that come from free `@gmail.com` accounts, especially if they contain links (like a password reset link).
+2. **Missing SPF/DKIM:** If your "From" address does not properly align with strict DMARC/SPF records (common when sending automated application emails through a personal Gmail), institutional filters will drop the mail silently.
+3. **Blacklisting:** The domain or IP blocks associated with your specific Gmail sender profile might be filtered by NIET policies.
+4. **Quarantine:** The email might be sitting in the admin quarantine queue of the NIET mail server, rather than the user's local spam folder.
+
+**Summary Diagnosis:** If the Spring Boot log shows a success message for `@niet.co.in`, the application completely succeeded. The NIET email administrators or spam filters destroyed or quarantined the email upon reception.
+
+---
+
+## C & D. How to Test Gmail & @niet.co.in Delivery
+
+You can now use the isolated test endpoint to test delivery without risking database lockups or token manipulation.
+
+Using **Postman** (or curl), send a `POST` request:
+**URL:** `http://localhost:8080/api/email/test`
+**Headers:** `Content-Type: application/json`
+**Body:**
+```json
+{
+  "to": "test@gmail.com",
+  "secret": "dev-secret-2026"
+}
+```
+
+1. **Test Gmail First:** Send the request to a regular Gmail address. Ensure you get a HTTP `200 OK` and receive the email.
+2. **Test NIET Next:** Change `"to": "student@niet.co.in"` and send again.
+
+**If the API returns `200 OK` and a `success` message:**
+It means Gmail accepted the message for delivery to NIET. The application's job is officially done.
+
+**If the API returns `500 Internal Server Error`:**
+Look at the `error_details` field in the JSON response, or check the terminal output for the raw cause.
+
+---
+
+## E. What SMTP Error/Log to Look For
+
+Because we enabled debug mode (`spring.mail.properties.mail.debug=true`), your terminal will now spit out raw SMTP commands mimicking a telnet session:
+
+```text
+DEBUG SMTP: trying to connect to host "smtp.gmail.com", port 587, isSSL false
+...
+C: MAIL FROM:<your-app-email@gmail.com>
+S: 250 2.1.0 OK
+C: RCPT TO:<student@niet.co.in>
+S: 250 2.1.5 OK  <--- VERY IMPORTANT
+...
+```
+
+**Look for the `RCPT TO` response:**
+- If the server responds `250 OK`, Google legally accepted responsibility for delivering the mail to NIET.
+- If the server responds with a `5xx` error code permanently rejecting the NIET domain, Google is refusing to deliver it for policy reasons (e.g., `550 5.7.1 Relaying denied` or `550 Restricted domain`).
+
+---
+
+## F. Next Steps with the NIET Email Administrator
+
+If your log shows `RCPT TO` returning `250 OK`, but the email never arrives, you must contact the NIET IT Administrator. 
+
+**Give them this exact information:**
+> *"Hello, I am developing a legitimate application that sends outbound password reset emails using Google's SMTP servers (`smtp.gmail.com`). My logs show that Google successfully processed and dispatched the emails to the `@niet.co.in` MX records, but they are never arriving in the user's inbox or spam folder. Could you please check the quarantine, gateway logs, or spam filter (e.g. Office365 Exchange trace / Barracuda) to see why incoming emails from `[YOUR_GMAIL_USERNAME]@gmail.com` with the subject **'Password Reset Request – Project Approval System'** are being dropped or quarantined?"*

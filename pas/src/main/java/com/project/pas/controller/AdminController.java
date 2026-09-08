@@ -103,6 +103,31 @@ public class AdminController {
         return "admin/user-form";
     }
 
+    @PostMapping("/users/upload")
+    public String uploadUsers(@RequestParam("file") org.springframework.web.multipart.MultipartFile file, RedirectAttributes redirect) {
+        try {
+            UserService.BulkUserUploadResult result = userService.uploadUsersFromCsv(file);
+            redirect.addFlashAttribute("bulkResult", result);
+            redirect.addFlashAttribute("success", "Bulk upload completed. Processed: " + result.getTotalProcessed() + 
+                    ", Success: " + result.getSuccessCount() + ", Failed: " + result.getFailedCount());
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", "Upload failed: " + e.getMessage());
+        }
+        return "redirect:/admin/users";
+    }
+
+    @GetMapping("/users/template")
+    public void downloadTemplate(jakarta.servlet.http.HttpServletResponse response) throws java.io.IOException {
+        response.setContentType("text/csv");
+        response.setHeader("Content-Disposition", "attachment; filename=\"user_upload_template.csv\"");
+        java.io.PrintWriter writer = response.getWriter();
+        writer.println("fullName,email,role,branch,password");
+        writer.println("John Doe,john@example.com,STUDENT,CS,password123");
+        writer.println("Jane Smith,jane@example.com,FACULTY,IT,password123");
+        writer.println("Admin User,admin2@example.com,ADMIN,,password123");
+        writer.flush();
+    }
+
     @PostMapping("/users/new")
     public String createUser(@RequestParam String fullName, @RequestParam String email,
             @RequestParam String password, @RequestParam Role role,

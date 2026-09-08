@@ -17,6 +17,38 @@
         </div>
         
         <div th:replace="~{fragments/alerts :: alerts}"></div>
+        
+        <div th:if="${bulkResult != null}" class="content-card mb-4" style="border-left: 4px solid var(--primary);">
+            <h5>Bulk Upload Results</h5>
+            <p>
+                <strong>Total Processed:</strong> <span th:text="${bulkResult.totalProcessed}">0</span> | 
+                <strong class="text-success">Success:</strong> <span class="text-success" th:text="${bulkResult.successCount}">0</span> | 
+                <strong class="text-danger">Failed:</strong> <span class="text-danger" th:text="${bulkResult.failedCount}">0</span>
+            </p>
+            <div th:if="${not #lists.isEmpty(bulkResult.errors)}" class="alert alert-warning" style="max-height: 200px; overflow-y: auto;">
+                <strong>Errors:</strong>
+                <ul class="mb-0 mt-2">
+                    <li th:each="error : ${bulkResult.errors}" th:text="${error}">Error details</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="content-card mb-4">
+            <h5 class="mb-3">Bulk User Upload</h5>
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <form th:action="@{/admin/users/upload}" method="post" enctype="multipart/form-data" class="d-flex align-items-center">
+                        <input type="file" name="file" class="form-control me-2" accept=".csv" required>
+                        <button type="submit" class="btn btn-primary text-nowrap"><i class="fas fa-upload"></i> Upload CSV</button>
+                    </form>
+                </div>
+                <div class="col-md-6 text-md-end mt-3 mt-md-0">
+                    <a th:href="@{/admin/users/template}" class="btn btn-outline">
+                        <i class="fas fa-download"></i> Download CSV Template
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <div class="content-card">
             <div class="table-responsive">

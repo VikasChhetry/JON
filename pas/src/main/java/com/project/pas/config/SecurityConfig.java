@@ -44,29 +44,28 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .authenticationProvider(authenticationProvider())
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/login", "/css/**", "/js/**", "/images/**", "/error").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/student/**").hasRole("STUDENT")
-                .requestMatchers("/faculty/**").hasRole("FACULTY")
-                .requestMatchers("/hod/**").hasRole("HOD")
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/login")
-                .successHandler(roleBasedSuccessHandler())
-                .failureUrl("/login?error=true")
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/logout")
-                .logoutSuccessUrl("/login?logout=true")
-                .permitAll()
-            )
-            .exceptionHandling(ex -> ex
-                .accessDeniedPage("/login?denied=true")
-            );
+                .authenticationProvider(authenticationProvider())
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/login", "/forgot-password", "/reset-password", "/css/**", "/js/**",
+                                "/images/**", "/error", "/api/email/test")
+                        .permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/student/**").hasRole("STUDENT")
+                        .requestMatchers("/faculty/**").hasRole("FACULTY")
+                        .requestMatchers("/hod/**").hasRole("HOD")
+                        .anyRequest().authenticated())
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .successHandler(roleBasedSuccessHandler())
+                        .failureUrl("/login?error=true")
+                        .permitAll())
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout=true")
+                        .permitAll())
+                .exceptionHandling(ex -> ex
+                        .accessDeniedPage("/login?denied=true"));
 
         return http.build();
     }
@@ -76,7 +75,7 @@ public class SecurityConfig {
         return new AuthenticationSuccessHandler() {
             @Override
             public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                                Authentication authentication) throws IOException, ServletException {
+                    Authentication authentication) throws IOException, ServletException {
                 Set<String> roles = AuthorityUtils.authorityListToSet(authentication.getAuthorities());
 
                 String targetUrl;
