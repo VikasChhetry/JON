@@ -23,8 +23,8 @@ public class StudentController {
     private final GuideSelectionService guideSelectionService;
 
     public StudentController(ProjectService projectService, ProjectTopicService topicService,
-                              UserService userService, FileStorageService fileStorageService,
-                              GuideSelectionService guideSelectionService) {
+            UserService userService, FileStorageService fileStorageService,
+            GuideSelectionService guideSelectionService) {
         this.projectService = projectService;
         this.topicService = topicService;
         this.userService = userService;
@@ -66,7 +66,8 @@ public class StudentController {
     public String newProjectForm(Authentication auth, Model model, RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         if (projectService.hasActiveProject(student)) {
-            redirect.addFlashAttribute("error", "You already have an active project. Complete it before starting a new one.");
+            redirect.addFlashAttribute("error",
+                    "You already have an active project. Complete it before starting a new one.");
             return "redirect:/student/dashboard";
         }
         model.addAttribute("student", student);
@@ -75,10 +76,10 @@ public class StudentController {
 
     @PostMapping("/project/new")
     public String submitProjectIdea(Authentication auth,
-                                     @RequestParam String title, @RequestParam String description,
-                                     @RequestParam(required = false) String category,
-                                     @RequestParam(required = false) String techStack,
-                                     RedirectAttributes redirect) {
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         try {
             Project project = projectService.submitOwnIdea(student, title, description, category, techStack);
@@ -96,7 +97,8 @@ public class StudentController {
     public String browseTopics(Authentication auth, Model model, RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         if (projectService.hasActiveProject(student)) {
-            redirect.addFlashAttribute("error", "You already have an active project. Complete it before selecting a new topic.");
+            redirect.addFlashAttribute("error",
+                    "You already have an active project. Complete it before selecting a new topic.");
             return "redirect:/student/dashboard";
         }
         List<ProjectTopic> topics = topicService.getAvailableTopics(student.getBranch());
@@ -143,6 +145,63 @@ public class StudentController {
         return "student/project-detail";
     }
 
+    // ==================== Stage 1: Submit Proposal ====================
+
+    @GetMapping("/project/{id}/proposal")
+    public String proposalForm(Authentication auth, @PathVariable Long id, Model model, RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        Project project = projectService.getProjectById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+        if (!project.getStudent().getId().equals(student.getId())) {
+            redirect.addFlashAttribute("error", "Access denied");
+            return "redirect:/student/dashboard";
+        }
+
+        // Only allow proposal when idea is approved or topic is selected
+        if (project.getStatus() != ProjectStatus.PROJECT_IDEA_APPROVED &&
+                project.getStatus() != ProjectStatus.TOPIC_SELECTED) {
+            redirect.addFlashAttribute("error",
+                    "Cannot submit proposal in current status: " + project.getStatus().getDisplayName());
+            return "redirect:/student/project/" + id;
+        }
+
+        model.addAttribute("project", project);
+        model.addAttribute("student", student);
+        return "student/project-proposal";
+    }
+
+    @PostMapping("/project/{id}/proposal")
+    public String submitProposal(Authentication auth, @PathVariable Long id,
+            @RequestParam String synopsis,
+            @RequestParam(required = false) MultipartFile pptFile,
+            @RequestParam String problemStatement,
+            @RequestParam String objectives,
+            @RequestParam(required = false) String literatureReview,
+            @RequestParam String methodology,
+            @RequestParam String systemDesign,
+            @RequestParam(required = false) String futureWork,
+            RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+            String pptFilePath = null;
+            if (pptFile != null && !pptFile.isEmpty()) {
+                pptFilePath = fileStorageService.storeFile(pptFile, "proposals/" + id);
+            }
+
+            projectService.submitProposal(project, student, synopsis, pptFilePath,
+                    problemStatement, objectives, literatureReview, methodology,
+                    systemDesign, futureWork);
+            redirect.addFlashAttribute("success", "Project proposal submitted for faculty review!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/project/" + id;
+    }
+
     // ==================== Start Working ====================
 
     @PostMapping("/project/{id}/start-working")
@@ -159,7 +218,7 @@ public class StudentController {
         return "redirect:/student/project/" + id;
     }
 
-    // ==================== Submit for Review ====================
+    // ==================== Stage 2: Submit Final Project ====================
 
     @GetMapping("/project/{id}/submit")
     public String submitForm(Authentication auth, @PathVariable Long id, Model model, RedirectAttributes redirect) {
@@ -172,6 +231,13 @@ public class StudentController {
             return "redirect:/student/dashboard";
         }
 
+        // Backend enforcement: only allow final submission from STUDENT_WORKING
+        if (project.getStatus() != ProjectStatus.STUDENT_WORKING) {
+            redirect.addFlashAttribute("error",
+                    "Cannot submit final project in current status. Your proposal must be approved and you must start working first.");
+            return "redirect:/student/project/" + id;
+        }
+
         model.addAttribute("project", project);
         model.addAttribute("student", student);
         return "student/project-submit";
@@ -179,9 +245,11 @@ public class StudentController {
 
     @PostMapping("/project/{id}/submit")
     public String submitProject(Authentication auth, @PathVariable Long id,
-                                 @RequestParam(required = false) MultipartFile reportFile,
-                                 @RequestParam(required = false) MultipartFile projectFile,
-                                 RedirectAttributes redirect) {
+            @RequestParam(required = false) MultipartFile reportFile,
+            @RequestParam(required = false) MultipartFile projectFile,
+            @RequestParam(required = false) String githubUrl,
+            @RequestParam(required = false) String videoUrl,
+            RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -196,8 +264,8 @@ public class StudentController {
                 projectPath = fileStorageService.storeFile(projectFile, "projects/" + id);
             }
 
-            projectService.submitForReview(project, student, reportPath, projectPath);
-            redirect.addFlashAttribute("success", "Project submitted for faculty review!");
+            projectService.submitForReview(project, student, reportPath, projectPath, githubUrl, videoUrl);
+            redirect.addFlashAttribute("success", "Final project submitted for faculty review!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
@@ -218,7 +286,7 @@ public class StudentController {
         }
 
         if (project.getStatus() != ProjectStatus.FACULTY_REJECTED &&
-            project.getStatus() != ProjectStatus.HOD_REJECTED) {
+                project.getStatus() != ProjectStatus.HOD_REJECTED) {
             redirect.addFlashAttribute("error", "Project can only be edited when rejected");
             return "redirect:/student/project/" + id;
         }
@@ -232,13 +300,24 @@ public class StudentController {
 
     @PostMapping("/project/{id}/edit")
     public String editAndResubmit(Authentication auth, @PathVariable Long id,
-                                    @RequestParam String title, @RequestParam String description,
-                                    @RequestParam(required = false) String category,
-                                    @RequestParam(required = false) String techStack,
-                                    @RequestParam(required = false) String comments,
-                                    @RequestParam(required = false) MultipartFile reportFile,
-                                    @RequestParam(required = false) MultipartFile projectFile,
-                                    RedirectAttributes redirect) {
+            @RequestParam String title, @RequestParam String description,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String techStack,
+            @RequestParam(required = false) String comments,
+            @RequestParam(required = false) MultipartFile reportFile,
+            @RequestParam(required = false) MultipartFile projectFile,
+            @RequestParam(required = false) String githubUrl,
+            @RequestParam(required = false) String videoUrl,
+            // Proposal fields for resubmission
+            @RequestParam(required = false) String synopsis,
+            @RequestParam(required = false) MultipartFile pptFile,
+            @RequestParam(required = false) String problemStatement,
+            @RequestParam(required = false) String objectives,
+            @RequestParam(required = false) String literatureReview,
+            @RequestParam(required = false) String methodology,
+            @RequestParam(required = false) String systemDesign,
+            @RequestParam(required = false) String futureWork,
+            RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
@@ -246,6 +325,17 @@ public class StudentController {
 
             // Edit project details
             projectService.editProject(project, student, title, description, category, techStack);
+
+            // If rejected at proposal stage, also update proposal fields
+            if (project.getRejectedAtStage() == ProjectStatus.PROPOSAL_PENDING_FACULTY) {
+                String pptFilePath = null;
+                if (pptFile != null && !pptFile.isEmpty()) {
+                    pptFilePath = fileStorageService.storeFile(pptFile, "proposals/" + id);
+                }
+                projectService.editProposal(project, student, synopsis, pptFilePath,
+                        problemStatement, objectives, literatureReview, methodology,
+                        systemDesign, futureWork);
+            }
 
             // Handle file uploads
             String reportPath = null;
@@ -258,7 +348,7 @@ public class StudentController {
             }
 
             // Resubmit
-            projectService.resubmit(project, student, reportPath, projectPath, comments);
+            projectService.resubmit(project, student, reportPath, projectPath, githubUrl, videoUrl, comments);
             redirect.addFlashAttribute("success", "Project resubmitted successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());

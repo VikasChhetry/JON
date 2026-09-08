@@ -5,6 +5,8 @@ public enum ProjectStatus {
     PROJECT_IDEA_PENDING_FACULTY("Project Idea Pending Faculty Review"),
     PROJECT_IDEA_APPROVED("Project Idea Approved"),
     TOPIC_SELECTED("Topic Selected"),
+    PROPOSAL_PENDING_FACULTY("Proposal Pending Faculty Review"),
+    PROPOSAL_APPROVED("Proposal Approved"),
     STUDENT_WORKING("Student Working"),
     PENDING_FACULTY_REVIEW("Pending Faculty Review"),
     FACULTY_APPROVED("Faculty Approved"),

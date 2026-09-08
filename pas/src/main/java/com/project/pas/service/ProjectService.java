@@ -13,7 +13,14 @@ import java.util.Optional;
 
 /**
  * Core workflow engine implementing the entire project approval state machine.
- * All branch enforcement and business rules are validated here at the service layer.
+ * All branch enforcement and business rules are validated here at the service
+ * layer.
+ *
+ * TWO-STAGE WORKFLOW:
+ * Stage 1: Project Proposal (synopsis, PPT, problem statement, etc.)
+ * -> Faculty reviews proposal -> Approve/Reject
+ * Stage 2: Final Project Submission (code, report, GitHub, video)
+ * -> Faculty reviews final -> HOD review -> Completed
  */
 @Service
 @Transactional
@@ -24,15 +31,15 @@ public class ProjectService {
     private final ProjectTopicService topicService;
     private final GuideAssignmentRepository guideAssignmentRepository;
 
-    // Statuses that indicate a project is "finished" — student can start another one
+    // Statuses that indicate a project is "finished" — student can start another
+    // one
     private static final List<ProjectStatus> TERMINAL_STATUSES = Arrays.asList(
-            ProjectStatus.COMPLETED
-    );
+            ProjectStatus.COMPLETED);
 
     public ProjectService(ProjectRepository projectRepository,
-                          ApprovalHistoryRepository historyRepository,
-                          ProjectTopicService topicService,
-                          GuideAssignmentRepository guideAssignmentRepository) {
+            ApprovalHistoryRepository historyRepository,
+            ProjectTopicService topicService,
+            GuideAssignmentRepository guideAssignmentRepository) {
         this.projectRepository = projectRepository;
         this.historyRepository = historyRepository;
         this.topicService = topicService;
@@ -101,18 +108,23 @@ public class ProjectService {
     // ==================== Delete Operations ====================
 
     /**
-     * Student can delete their project ONLY if faculty has not taken any action yet.
-     * Rule: Deletion is allowed only when there is NO Faculty action/review recorded for that project.
+     * Student can delete their project ONLY if faculty has not taken any action
+     * yet.
+     * Rule: Deletion is allowed only when there is NO Faculty action/review
+     * recorded for that project.
      */
     public boolean canStudentDelete(Project project, User student) {
-        if (project == null || student == null) return false;
-        if (project.getStudent() == null || !project.getStudent().getId().equals(student.getId())) return false;
+        if (project == null || student == null)
+            return false;
+        if (project.getStudent() == null || !project.getStudent().getId().equals(student.getId()))
+            return false;
 
         // Disallow if status is beyond initial waiting states
         ProjectStatus status = project.getStatus();
         if (status != ProjectStatus.PROJECT_IDEA_PENDING_FACULTY &&
-            status != ProjectStatus.TOPIC_SELECTED &&
-            status != ProjectStatus.PENDING_FACULTY_REVIEW) {
+                status != ProjectStatus.TOPIC_SELECTED &&
+                status != ProjectStatus.PROPOSAL_PENDING_FACULTY &&
+                status != ProjectStatus.PENDING_FACULTY_REVIEW) {
             return false;
         }
 
@@ -120,7 +132,7 @@ public class ProjectService {
         List<ApprovalHistory> histories = historyRepository.findByProjectIdOrderByTimestampDesc(project.getId());
         for (ApprovalHistory history : histories) {
             if (history.getUserRole() == Role.FACULTY ||
-                (history.getPerformedBy() != null && history.getPerformedBy().getRole() == Role.FACULTY)) {
+                    (history.getPerformedBy() != null && history.getPerformedBy().getRole() == Role.FACULTY)) {
                 return false;
             }
         }
@@ -167,13 +179,14 @@ public class ProjectService {
      * Rule: Student can have only one active project at a time.
      */
     public Project submitOwnIdea(User student, String title, String description,
-                                  String category, String techStack) {
+            String category, String techStack) {
         validateStudent(student);
         validateNoActiveProject(student);
 
         // Require assigned guide
         GuideAssignment guide = guideAssignmentRepository.findByStudent(student)
-                .orElseThrow(() -> new IllegalStateException("You must have an assigned faculty guide before submitting a project. Please select a guide first."));
+                .orElseThrow(() -> new IllegalStateException(
+                        "You must have an assigned faculty guide before submitting a project. Please select a guide first."));
 
         Project project = new Project();
         project.setTitle(title);
@@ -187,7 +200,8 @@ public class ProjectService {
         project.setStatus(ProjectStatus.PROJECT_IDEA_PENDING_FACULTY);
 
         project = projectRepository.save(project);
-        recordHistory(project, "Submitted project idea", student, null, ProjectStatus.PROJECT_IDEA_PENDING_FACULTY, null, null);
+        recordHistory(project, "Submitted project idea", student, null, ProjectStatus.PROJECT_IDEA_PENDING_FACULTY,
+                null, null);
 
         return project;
     }
@@ -209,7 +223,8 @@ public class ProjectService {
 
         // Require assigned guide
         GuideAssignment guide = guideAssignmentRepository.findByStudent(student)
-                .orElseThrow(() -> new IllegalStateException("You must have an assigned faculty guide before selecting a topic. Please select a guide first."));
+                .orElseThrow(() -> new IllegalStateException(
+                        "You must have an assigned faculty guide before selecting a topic. Please select a guide first."));
 
         Project project = new Project();
         project.setTitle(topic.getTitle());
@@ -231,6 +246,48 @@ public class ProjectService {
         recordHistory(project, "Selected project topic", student, null, ProjectStatus.TOPIC_SELECTED, null, null);
 
         return project;
+    }
+
+    // ==================== Stage 1: Proposal Submission ====================
+
+    /**
+     * Student submits proposal documents for faculty review.
+     * Allowed from: PROJECT_IDEA_APPROVED, TOPIC_SELECTED, or resubmission after
+     * proposal rejection.
+     */
+    public void submitProposal(Project project, User student,
+            String synopsis, String pptFilePath,
+            String problemStatement, String objectives,
+            String literatureReview, String methodology,
+            String systemDesign, String futureWork) {
+        validateStudent(student);
+        validateOwner(project, student);
+
+        // Allowed states for proposal submission
+        if (project.getStatus() != ProjectStatus.PROJECT_IDEA_APPROVED &&
+                project.getStatus() != ProjectStatus.TOPIC_SELECTED) {
+            throw new IllegalStateException(
+                    "Cannot submit proposal in current status: " + project.getStatus().getDisplayName());
+        }
+
+        ProjectStatus previousStatus = project.getStatus();
+
+        // Save proposal fields
+        project.setSynopsis(synopsis);
+        if (pptFilePath != null)
+            project.setPptFilePath(pptFilePath);
+        project.setProblemStatement(problemStatement);
+        project.setObjectives(objectives);
+        project.setLiteratureReview(literatureReview);
+        project.setMethodology(methodology);
+        project.setSystemDesign(systemDesign);
+        project.setFutureWork(futureWork);
+
+        project.setStatus(ProjectStatus.PROPOSAL_PENDING_FACULTY);
+        projectRepository.save(project);
+
+        recordHistory(project, "Submitted project proposal for faculty review", student, previousStatus,
+                ProjectStatus.PROPOSAL_PENDING_FACULTY, null, null);
     }
 
     // ==================== Faculty Idea Review ====================
@@ -271,19 +328,60 @@ public class ProjectService {
                 ProjectStatus.FACULTY_REJECTED, comments, rejectionReason);
     }
 
+    // ==================== Faculty Proposal Review ====================
+
+    /**
+     * Faculty approves a project proposal (Stage 1).
+     * After approval, student can start working and eventually submit final project
+     * (Stage 2).
+     */
+    public void approveProposal(Project project, User faculty, String comments) {
+        validateFaculty(faculty);
+        validateBranchMatch(faculty, project.getBranch());
+        validateAssignedGuide(project, faculty);
+        validateStatus(project, ProjectStatus.PROPOSAL_PENDING_FACULTY);
+
+        ProjectStatus previousStatus = project.getStatus();
+        project.setStatus(ProjectStatus.PROPOSAL_APPROVED);
+        projectRepository.save(project);
+
+        recordHistory(project, "Approved project proposal", faculty, previousStatus,
+                ProjectStatus.PROPOSAL_APPROVED, comments, null);
+    }
+
+    /**
+     * Faculty rejects a project proposal. Rejection reason is mandatory.
+     */
+    public void rejectProposal(Project project, User faculty, String comments, String rejectionReason) {
+        validateFaculty(faculty);
+        validateBranchMatch(faculty, project.getBranch());
+        validateAssignedGuide(project, faculty);
+        validateStatus(project, ProjectStatus.PROPOSAL_PENDING_FACULTY);
+        validateRejectionReason(rejectionReason);
+
+        ProjectStatus previousStatus = project.getStatus();
+        project.setStatus(ProjectStatus.FACULTY_REJECTED);
+        project.setRejectedAtStage(ProjectStatus.PROPOSAL_PENDING_FACULTY);
+        projectRepository.save(project);
+
+        recordHistory(project, "Rejected project proposal", faculty, previousStatus,
+                ProjectStatus.FACULTY_REJECTED, comments, rejectionReason);
+    }
+
     // ==================== Student Working ====================
 
     /**
-     * Student starts working on an approved idea.
+     * Student starts working on an approved proposal.
      */
     public void startWorking(Project project, User student) {
         validateStudent(student);
         validateOwner(project, student);
 
-        // Can start working after idea approval or topic selection
-        if (project.getStatus() != ProjectStatus.PROJECT_IDEA_APPROVED &&
-            project.getStatus() != ProjectStatus.TOPIC_SELECTED) {
-            throw new IllegalStateException("Cannot start working in current status: " + project.getStatus().getDisplayName());
+        // Can start working after proposal approval
+        if (project.getStatus() != ProjectStatus.PROPOSAL_APPROVED) {
+            throw new IllegalStateException(
+                    "Cannot start working in current status: " + project.getStatus().getDisplayName() +
+                            ". Your proposal must be approved by faculty first.");
         }
 
         ProjectStatus previousStatus = project.getStatus();
@@ -295,23 +393,31 @@ public class ProjectService {
     }
 
     /**
-     * Student submits completed project for faculty review (with files).
+     * Student submits completed project for faculty review (with files) — Stage 2.
      */
-    public void submitForReview(Project project, User student, String reportPath, String projectPath) {
+    public void submitForReview(Project project, User student, String reportPath, String projectPath,
+            String githubUrl, String videoUrl) {
         validateStudent(student);
         validateOwner(project, student);
 
         if (project.getStatus() != ProjectStatus.STUDENT_WORKING) {
-            throw new IllegalStateException("Can only submit from STUDENT_WORKING status");
+            throw new IllegalStateException("Can only submit final project from STUDENT_WORKING status. " +
+                    "Your proposal must be approved and you must click 'Start Working' first.");
         }
 
         ProjectStatus previousStatus = project.getStatus();
-        if (reportPath != null) project.setReportFilePath(reportPath);
-        if (projectPath != null) project.setProjectFilePath(projectPath);
+        if (reportPath != null)
+            project.setReportFilePath(reportPath);
+        if (projectPath != null)
+            project.setProjectFilePath(projectPath);
+        if (githubUrl != null && !githubUrl.isBlank())
+            project.setGithubUrl(githubUrl);
+        if (videoUrl != null && !videoUrl.isBlank())
+            project.setVideoUrl(videoUrl);
         project.setStatus(ProjectStatus.PENDING_FACULTY_REVIEW);
         projectRepository.save(project);
 
-        recordHistory(project, "Submitted project for faculty review", student, previousStatus,
+        recordHistory(project, "Submitted final project for faculty review", student, previousStatus,
                 ProjectStatus.PENDING_FACULTY_REVIEW, null, null);
     }
 
@@ -400,21 +506,29 @@ public class ProjectService {
 
     /**
      * Student resubmits after rejection.
-     * Goes back to the stage where it was rejected (faculty or HOD).
+     * Goes back to the stage where it was rejected (idea, proposal, faculty review,
+     * or HOD).
      */
-    public void resubmit(Project project, User student, String reportPath, String projectPath, String comments) {
+    public void resubmit(Project project, User student, String reportPath, String projectPath,
+            String githubUrl, String videoUrl, String comments) {
         validateStudent(student);
         validateOwner(project, student);
 
         if (project.getStatus() != ProjectStatus.FACULTY_REJECTED &&
-            project.getStatus() != ProjectStatus.HOD_REJECTED) {
+                project.getStatus() != ProjectStatus.HOD_REJECTED) {
             throw new IllegalStateException("Can only resubmit from a rejected status");
         }
 
         ProjectStatus previousStatus = project.getStatus();
 
-        if (reportPath != null) project.setReportFilePath(reportPath);
-        if (projectPath != null) project.setProjectFilePath(projectPath);
+        if (reportPath != null)
+            project.setReportFilePath(reportPath);
+        if (projectPath != null)
+            project.setProjectFilePath(projectPath);
+        if (githubUrl != null)
+            project.setGithubUrl(githubUrl);
+        if (videoUrl != null)
+            project.setVideoUrl(videoUrl);
 
         // First move to STUDENT_RESUBMISSION
         project.setStatus(ProjectStatus.STUDENT_RESUBMISSION);
@@ -429,6 +543,8 @@ public class ProjectService {
             targetStatus = ProjectStatus.PENDING_HOD_REVIEW;
         } else if (project.getRejectedAtStage() == ProjectStatus.PROJECT_IDEA_PENDING_FACULTY) {
             targetStatus = ProjectStatus.PROJECT_IDEA_PENDING_FACULTY;
+        } else if (project.getRejectedAtStage() == ProjectStatus.PROPOSAL_PENDING_FACULTY) {
+            targetStatus = ProjectStatus.PROPOSAL_PENDING_FACULTY;
         } else {
             targetStatus = ProjectStatus.PENDING_FACULTY_REVIEW;
         }
@@ -445,13 +561,13 @@ public class ProjectService {
      * Student edits project details (used before resubmission).
      */
     public void editProject(Project project, User student, String title, String description,
-                            String category, String techStack) {
+            String category, String techStack) {
         validateStudent(student);
         validateOwner(project, student);
 
         // Can only edit when in rejected state
         if (project.getStatus() != ProjectStatus.FACULTY_REJECTED &&
-            project.getStatus() != ProjectStatus.HOD_REJECTED) {
+                project.getStatus() != ProjectStatus.HOD_REJECTED) {
             throw new IllegalStateException("Can only edit project when it has been rejected");
         }
 
@@ -459,6 +575,37 @@ public class ProjectService {
         project.setDescription(description);
         project.setCategory(category);
         project.setTechStack(techStack);
+        projectRepository.save(project);
+    }
+
+    /**
+     * Student edits proposal documents (used when proposal is rejected).
+     */
+    public void editProposal(Project project, User student,
+            String synopsis, String pptFilePath,
+            String problemStatement, String objectives,
+            String literatureReview, String methodology,
+            String systemDesign, String futureWork) {
+        validateStudent(student);
+        validateOwner(project, student);
+
+        if (project.getStatus() != ProjectStatus.FACULTY_REJECTED) {
+            throw new IllegalStateException("Can only edit proposal when it has been rejected");
+        }
+
+        if (project.getRejectedAtStage() != ProjectStatus.PROPOSAL_PENDING_FACULTY) {
+            throw new IllegalStateException("Proposal can only be edited when rejected at the proposal stage");
+        }
+
+        project.setSynopsis(synopsis);
+        if (pptFilePath != null)
+            project.setPptFilePath(pptFilePath);
+        project.setProblemStatement(problemStatement);
+        project.setObjectives(objectives);
+        project.setLiteratureReview(literatureReview);
+        project.setMethodology(methodology);
+        project.setSystemDesign(systemDesign);
+        project.setFutureWork(futureWork);
         projectRepository.save(project);
     }
 
@@ -496,7 +643,8 @@ public class ProjectService {
 
     private void validateNoActiveProject(User student) {
         if (hasActiveProject(student)) {
-            throw new IllegalStateException("You already have an active project. Complete or close it before starting a new one.");
+            throw new IllegalStateException(
+                    "You already have an active project. Complete or close it before starting a new one.");
         }
     }
 
@@ -504,12 +652,13 @@ public class ProjectService {
         if (project.getStatus() != expectedStatus) {
             throw new IllegalStateException(
                     "Invalid action: project is in '" + project.getStatus().getDisplayName() +
-                    "' status, expected '" + expectedStatus.getDisplayName() + "'");
+                            "' status, expected '" + expectedStatus.getDisplayName() + "'");
         }
     }
 
     /**
-     * Validates that the faculty performing the action is the assigned guide for this project.
+     * Validates that the faculty performing the action is the assigned guide for
+     * this project.
      */
     private void validateAssignedGuide(Project project, User faculty) {
         if (project.getFacultyGuide() == null) {
@@ -529,8 +678,8 @@ public class ProjectService {
     // ==================== History Recording ====================
 
     private void recordHistory(Project project, String action, User performedBy,
-                               ProjectStatus previousStatus, ProjectStatus newStatus,
-                               String comments, String rejectionReason) {
+            ProjectStatus previousStatus, ProjectStatus newStatus,
+            String comments, String rejectionReason) {
         ApprovalHistory history = new ApprovalHistory();
         history.setProject(project);
         history.setAction(action);

@@ -63,7 +63,41 @@ public class Project {
 
     private String projectFilePath;
 
-    // Track which review stage we were at before rejection, so resubmission goes back to the right reviewer
+    // ========== Stage 1: Proposal Document Fields ==========
+
+    @Column(columnDefinition = "TEXT")
+    private String synopsis;
+
+    private String pptFilePath;
+
+    @Column(columnDefinition = "TEXT")
+    private String problemStatement;
+
+    @Column(columnDefinition = "TEXT")
+    private String objectives;
+
+    @Column(columnDefinition = "TEXT")
+    private String literatureReview;
+
+    @Column(columnDefinition = "TEXT")
+    private String methodology;
+
+    @Column(columnDefinition = "TEXT")
+    private String systemDesign;
+
+    @Column(columnDefinition = "TEXT")
+    private String futureWork;
+
+    // ========== Stage 2: Final Submission Fields ==========
+
+    @Size(max = 500)
+    private String githubUrl;
+
+    @Size(max = 500)
+    private String videoUrl;
+
+    // Track which review stage we were at before rejection, so resubmission goes
+    // back to the right reviewer
     @Enumerated(EnumType.STRING)
     private ProjectStatus rejectedAtStage;
 
@@ -226,5 +260,89 @@ public class Project {
 
     public void setApprovalHistory(List<ApprovalHistory> approvalHistory) {
         this.approvalHistory = approvalHistory;
+    }
+
+    // ========== Stage 1: Proposal Getters/Setters ==========
+
+    public String getSynopsis() {
+        return synopsis;
+    }
+
+    public void setSynopsis(String synopsis) {
+        this.synopsis = synopsis;
+    }
+
+    public String getPptFilePath() {
+        return pptFilePath;
+    }
+
+    public void setPptFilePath(String pptFilePath) {
+        this.pptFilePath = pptFilePath;
+    }
+
+    public String getProblemStatement() {
+        return problemStatement;
+    }
+
+    public void setProblemStatement(String problemStatement) {
+        this.problemStatement = problemStatement;
+    }
+
+    public String getObjectives() {
+        return objectives;
+    }
+
+    public void setObjectives(String objectives) {
+        this.objectives = objectives;
+    }
+
+    public String getLiteratureReview() {
+        return literatureReview;
+    }
+
+    public void setLiteratureReview(String literatureReview) {
+        this.literatureReview = literatureReview;
+    }
+
+    public String getMethodology() {
+        return methodology;
+    }
+
+    public void setMethodology(String methodology) {
+        this.methodology = methodology;
+    }
+
+    public String getSystemDesign() {
+        return systemDesign;
+    }
+
+    public void setSystemDesign(String systemDesign) {
+        this.systemDesign = systemDesign;
+    }
+
+    public String getFutureWork() {
+        return futureWork;
+    }
+
+    public void setFutureWork(String futureWork) {
+        this.futureWork = futureWork;
+    }
+
+    // ========== Stage 2: Final Submission Getters/Setters ==========
+
+    public String getGithubUrl() {
+        return githubUrl;
+    }
+
+    public void setGithubUrl(String githubUrl) {
+        this.githubUrl = githubUrl;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
+    }
+
+    public void setVideoUrl(String videoUrl) {
+        this.videoUrl = videoUrl;
     }
 }
