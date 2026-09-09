@@ -49,9 +49,9 @@ public class FacultyController {
         User faculty = getCurrentUser(auth);
         Branch branch = faculty.getBranch();
 
-        // Pending idea reviews
+        // Pending idea and proposal reviews (Stage 1)
         List<Project> pendingIdeas = projectService.getProjectsByBranchAndStatuses(branch,
-                List.of(ProjectStatus.PROJECT_IDEA_PENDING_FACULTY));
+                List.of(ProjectStatus.PROJECT_IDEA_PENDING_FACULTY, ProjectStatus.PROPOSAL_PENDING_FACULTY));
 
         // Pending project reviews
         List<Project> pendingReviews = projectService.getProjectsByBranchAndStatuses(branch,
@@ -137,6 +137,41 @@ public class FacultyController {
                     .orElseThrow(() -> new IllegalArgumentException("Project not found"));
             projectService.rejectIdea(project, faculty, comments, rejectionReason);
             redirect.addFlashAttribute("success", "Project idea rejected. Student will be notified.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/faculty/projects/" + id;
+    }
+
+    // ==================== Proposal Review (Stage 1) ====================
+
+    @PostMapping("/projects/{id}/approve-proposal")
+    public String approveProposal(Authentication auth, @PathVariable Long id,
+            @RequestParam(required = false) String comments,
+            RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+            projectService.approveProposal(project, faculty, comments);
+            redirect.addFlashAttribute("success", "Project proposal approved! Student can now start working.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/faculty/projects/" + id;
+    }
+
+    @PostMapping("/projects/{id}/reject-proposal")
+    public String rejectProposal(Authentication auth, @PathVariable Long id,
+            @RequestParam(required = false) String comments,
+            @RequestParam String rejectionReason,
+            RedirectAttributes redirect) {
+        User faculty = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+            projectService.rejectProposal(project, faculty, comments, rejectionReason);
+            redirect.addFlashAttribute("success", "Project proposal rejected. Student will be notified to revise it.");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
         }
@@ -327,6 +362,8 @@ public class FacultyController {
             filePath = project.getReportFilePath();
         } else if ("source".equals(type)) {
             filePath = project.getProjectFilePath();
+        } else if ("ppt".equals(type)) {
+            filePath = project.getPptFilePath();
         } else {
             return ResponseEntity.badRequest().build();
         }

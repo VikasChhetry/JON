@@ -43,7 +43,7 @@ public class Project {
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(255)")
     private ProjectStatus status = ProjectStatus.DRAFT;
 
     @NotNull
@@ -99,6 +99,7 @@ public class Project {
     // Track which review stage we were at before rejection, so resubmission goes
     // back to the right reviewer
     @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(255)")
     private ProjectStatus rejectedAtStage;
 
     @Column(nullable = false, updatable = false)

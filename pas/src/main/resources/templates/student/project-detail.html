@@ -63,17 +63,27 @@
             <div class="col-lg-4 order-lg-2">
                 <!-- Action Panel -->
                 <div class="content-card mb-4"
-                    th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED' || project.status.name() == 'STUDENT_WORKING' || project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
+                    th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED' || project.status.name() == 'PROPOSAL_APPROVED' || project.status.name() == 'STUDENT_WORKING' || project.status.name() == 'FACULTY_REJECTED' || project.status.name() == 'HOD_REJECTED'}">
                     <div class="card-header bg-primary bg-opacity-10">
                         <h2>Required Actions</h2>
                     </div>
                     <div class="card-body">
 
-                        <!-- Start Working Action -->
+                        <!-- Submit Proposal Action (Stage 1) -->
                         <div
                             th:if="${project.status.name() == 'PROJECT_IDEA_APPROVED' || project.status.name() == 'TOPIC_SELECTED'}">
-                            <p class="text-secondary mb-3">Your project is approved to begin. Click below to start
-                                working on your implementation.</p>
+                            <p class="text-secondary mb-3">Your project is approved to begin. Please submit your
+                                required project proposal documents first.</p>
+                            <a th:href="@{'/student/project/' + ${project.id} + '/proposal'}"
+                                class="btn btn-warning w-100 text-dark">
+                                <i class="fas fa-file-alt"></i> Submit Project Proposal
+                            </a>
+                        </div>
+
+                        <!-- Start Working Action -->
+                        <div th:if="${project.status.name() == 'PROPOSAL_APPROVED'}">
+                            <p class="text-secondary mb-3">Your proposal has been approved! You can now start
+                                working on the implementation.</p>
                             <form th:action="@{'/student/project/' + ${project.id} + '/start-working'}" method="post">
                                 <button type="submit" class="btn btn-primary w-100">
                                     <i class="fas fa-play"></i> Start Working
@@ -141,7 +151,7 @@
                     </div>
                     <div class="card-body">
                         <div class="timeline">
-                            <div th:each="hist : ${history}" class="timeline-item" th:classappend="${hist.newStatus.name() == 'FACULTY_APPROVED' || hist.newStatus.name() == 'PROJECT_IDEA_APPROVED' ? 'approved' : 
+                            <div th:each="hist : ${history}" class="timeline-item" th:classappend="${hist.newStatus.name() == 'FACULTY_APPROVED' || hist.newStatus.name() == 'PROJECT_IDEA_APPROVED' || hist.newStatus.name() == 'PROPOSAL_APPROVED' ? 'approved' : 
                                                  (hist.newStatus.name() == 'FACULTY_REJECTED' || hist.newStatus.name() == 'HOD_REJECTED' ? 'rejected' : 
                                                  (hist.newStatus.name() == 'COMPLETED' ? 'completed' : ''))}">
 

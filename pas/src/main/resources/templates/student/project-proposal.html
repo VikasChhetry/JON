@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
+          title='Submit Project Proposal',
+          content=~{::main}
+      )}">
+
+<body>
+    <main th:fragment="main">
+        <div class="d-flex justify-content-between align-items-start mb-4">
+            <div class="page-header mb-0">
+                <h1>Submit Project Proposal</h1>
+                <p>Provide the initial required documents for your faculty guide's review (Stage 1)</p>
+            </div>
+            <a th:href="@{'/student/project/' + ${project.id}}" class="btn btn-outline">Cancel</a>
+        </div>
+
+        <div th:replace="~{fragments/alerts :: alerts}"></div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="content-card">
+                    <div class="card-body">
+                        <form th:action="@{'/student/project/' + ${project.id} + '/proposal'}" method="post"
+                            enctype="multipart/form-data" data-validate>
+
+                            <h3 class="fs-5 fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-2">Proposal
+                                Documents</h3>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Synopsis *</label>
+                                <textarea name="synopsis" class="form-control" rows="3" required
+                                    placeholder="Brief overview of the project..."></textarea>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">PowerPoint Presentation (PPT) *</label>
+                                <label class="file-upload w-100 d-block">
+                                    <input type="file" name="pptFile" class="d-none" accept=".ppt,.pptx" required>
+                                    <div class="upload-icon"><i class="fas fa-file-powerpoint text-warning"></i></div>
+                                    <div class="upload-text text-primary">Click to select PPT file</div>
+                                    <div class="upload-hint">Max 10MB (.ppt, .pptx)</div>
+                                </label>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Problem Statement *</label>
+                                <textarea name="problemStatement" class="form-control" rows="3" required
+                                    placeholder="What problem is this project solving?"></textarea>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Objectives *</label>
+                                <textarea name="objectives" class="form-control" rows="3" required
+                                    placeholder="List the main objectives..."></textarea>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label">Literature Review</label>
+                                <textarea name="literatureReview" class="form-control" rows="4"
+                                    placeholder="Summary of existing research/systems..."></textarea>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">Proposed Methodology *</label>
+                                <textarea name="methodology" class="form-control" rows="4" required
+                                    placeholder="How will you build this project?"></textarea>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-primary">System Design/Architecture *</label>
+                                <textarea name="systemDesign" class="form-control" rows="4" required
+                                    placeholder="Describe architecture, ER diagrams, flowcharts, etc. (Can provide links to diagrams)"></textarea>
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label class="form-label">Future Work/Plan</label>
+                                <textarea name="futureWork" class="form-control" rows="3"
+                                    placeholder="What are the future enhancements?"></textarea>
+                            </div>
+
+                            <div class="alert alert-warning mb-4">
+                                <i class="fas fa-info-circle me-2"></i> <strong>Note:</strong> Final code, GitHub URL,
+                                and actual project files are NOT submittable during this stage. They will be submitted
+                                in Stage 2 after proposal approval.
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-paper-plane me-2"></i> Submit Proposal
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="content-card">
+                    <div class="card-header bg-dark">
+                        <h2>Stage 1 Requirements</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul class="text-secondary ps-3" style="font-size: 14px;">
+                            <li class="mb-2">Your faculty guide will review these details to ensure the project scope is
+                                appropriate.</li>
+                            <li class="mb-2">If rejected, you can edit and resubmit the proposal based on feedback.</li>
+                            <li class="mb-2 text-warning">Do not include any source code at this stage.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

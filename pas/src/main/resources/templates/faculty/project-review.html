@@ -93,6 +93,98 @@
                     </div>
                 </div>
 
+                <!-- Proposal Review Panel -->
+                <div th:if="${project.status.name() == 'PROPOSAL_PENDING_FACULTY'}"
+                    class="review-panel border-warning border-opacity-50 mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fas fa-file-alt text-warning fs-4"></i>
+                        <h3 class="mb-0 text-warning">Proposal Review Stage</h3>
+                    </div>
+                    <p class="text-secondary mb-4">The student has submitted the initial project proposal. Please review
+                        to allow them to start working.</p>
+
+                    <div class="mb-4">
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <strong>Synopsis:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.synopsis}"></div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <strong>Problem Statement:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.problemStatement}"></div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <strong>Objectives:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.objectives}"></div>
+                            </div>
+                            <div class="col-12 mb-3"
+                                th:if="${project.literatureReview != null && !project.literatureReview.isEmpty()}">
+                                <strong>Literature Review:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.literatureReview}"></div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <strong>Proposed Methodology:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.methodology}"></div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <strong>System Design/Architecture:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.systemDesign}"></div>
+                            </div>
+                            <div class="col-12 mb-3"
+                                th:if="${project.futureWork != null && !project.futureWork.isEmpty()}">
+                                <strong>Future Work:</strong>
+                                <div class="p-3 bg-dark rounded border border-secondary border-opacity-25 mt-2"
+                                    style="white-space: pre-wrap;" th:text="${project.futureWork}"></div>
+                            </div>
+                        </div>
+
+                        <div th:if="${project.pptFilePath != null}" class="mt-2 text-center">
+                            <a th:href="@{'/faculty/projects/' + ${project.id} + '/download/ppt'}"
+                                class="btn btn-outline-warning">
+                                <i class="fas fa-file-powerpoint me-2"></i> Download Presentation (PPT)
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="row border-top border-secondary border-opacity-25 pt-4 mt-2">
+                        <!-- Approve Form -->
+                        <div class="col-md-6 mb-3">
+                            <form th:id="'approve-proposal-form-' + ${project.id}"
+                                th:action="@{'/faculty/projects/' + ${project.id} + '/approve-proposal'}" method="post">
+                                <div class="form-group">
+                                    <label class="form-label">Optional Comments</label>
+                                    <input type="text" name="comments" class="form-control" placeholder="Looks good...">
+                                </div>
+                                <button type="button" class="btn btn-success w-100"
+                                    th:onclick="'confirmApprove(\'approve-proposal-form-' + ${project.id} + '\')'">
+                                    <i class="fas fa-check"></i> Approve Proposal
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Reject Button triggers modal -->
+                        <div class="col-md-6 mb-3 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger w-100"
+                                th:onclick="'openRejectModal(\'reject-proposal-form-' + ${project.id} + '\')'">
+                                <i class="fas fa-times"></i> Reject Proposal
+                            </button>
+                            <!-- Hidden reject form submitted by modal JS -->
+                            <form th:id="'reject-proposal-form-' + ${project.id}"
+                                th:action="@{'/faculty/projects/' + ${project.id} + '/reject-proposal'}" method="post"
+                                style="display: none;">
+                                <input type="hidden" name="rejectionReason" value="">
+                                <input type="hidden" name="comments" value="">
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Final Project Review Panel -->
                 <div th:if="${project.status.name() == 'PENDING_FACULTY_REVIEW'}"
                     class="review-panel border-info border-opacity-50">
@@ -101,20 +193,38 @@
                         <h3 class="mb-0 text-info">Project Review Stage</h3>
                     </div>
 
-                    <div class="d-flex gap-3 mb-4">
+                    <div class="d-flex gap-3 mb-4 flex-wrap">
                         <a th:if="${project.reportFilePath != null}"
                             th:href="@{'/faculty/projects/' + ${project.id} + '/download/report'}"
-                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none">
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
                             <div class="fw-bold fs-6 mb-2 text-light"><i class="fas fa-file-pdf text-danger me-2"></i>
                                 Report</div>
                             <span class="badge bg-success"><i class="fas fa-download me-1"></i> Download</span>
                         </a>
                         <a th:if="${project.projectFilePath != null}"
                             th:href="@{'/faculty/projects/' + ${project.id} + '/download/source'}"
-                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none">
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
                             <div class="fw-bold fs-6 mb-2 text-light"><i
                                     class="fas fa-file-archive text-warning me-2"></i> Source</div>
                             <span class="badge bg-success"><i class="fas fa-download me-1"></i> Download</span>
+                        </a>
+                        <a th:if="${project.githubUrl != null && !project.githubUrl.isEmpty()}"
+                            th:href="${project.githubUrl}" target="_blank"
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
+                            <div class="fw-bold fs-6 mb-2 text-light"><i class="fab fa-github text-light me-2"></i>
+                                GitHub</div>
+                            <span class="badge bg-info"><i class="fas fa-external-link-alt me-1"></i> Open Link</span>
+                        </a>
+                        <a th:if="${project.videoUrl != null && !project.videoUrl.isEmpty()}"
+                            th:href="${project.videoUrl}" target="_blank"
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
+                            <div class="fw-bold fs-6 mb-2 text-light"><i class="fas fa-video text-danger me-2"></i>
+                                Video</div>
+                            <span class="badge bg-info"><i class="fas fa-external-link-alt me-1"></i> Open Link</span>
                         </a>
                     </div>
 

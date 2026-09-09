@@ -27,10 +27,11 @@ public class ApprovalHistory {
     private Role userRole;
 
     @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "VARCHAR(255)")
     private ProjectStatus previousStatus;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "VARCHAR(255)")
     private ProjectStatus newStatus;
 
     @Column(columnDefinition = "TEXT")

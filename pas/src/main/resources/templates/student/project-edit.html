@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
           title='Edit & Resubmit Project',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="d-flex justify-content-between align-items-start mb-4">
@@ -13,41 +13,110 @@
             </div>
             <a th:href="@{'/student/project/' + ${project.id}}" class="btn btn-outline">Cancel</a>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
         <div class="row">
             <div class="col-lg-8">
                 <div class="content-card">
                     <div class="card-body">
-                        <form th:action="@{'/student/project/' + ${project.id} + '/edit'}" method="post" enctype="multipart/form-data" data-validate>
-                            
-                            <h3 class="fs-5 fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-2">Project Details</h3>
-                            
+                        <form th:action="@{'/student/project/' + ${project.id} + '/edit'}" method="post"
+                            enctype="multipart/form-data" data-validate>
+
+                            <h3 class="fs-5 fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-2">Project
+                                Details</h3>
+
                             <div class="form-group mb-3">
                                 <label class="form-label text-primary">Project Title *</label>
-                                <input type="text" name="title" class="form-control" th:value="${project.title}" required maxlength="200">
+                                <input type="text" name="title" class="form-control" th:value="${project.title}"
+                                    required maxlength="200">
                             </div>
-                            
+
                             <div class="form-group mb-3">
                                 <label class="form-label text-primary">Detailed Description *</label>
-                                <textarea name="description" class="form-control" rows="6" required th:text="${project.description}"></textarea>
+                                <textarea name="description" class="form-control" rows="6" required
+                                    th:text="${project.description}"></textarea>
                             </div>
-                            
+
                             <div class="row mb-4">
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Category</label>
-                                    <input type="text" name="category" class="form-control" th:value="${project.category}" maxlength="100">
+                                    <input type="text" name="category" class="form-control"
+                                        th:value="${project.category}" maxlength="100">
                                 </div>
                                 <div class="col-md-6 form-group">
                                     <label class="form-label">Tech Stack</label>
-                                    <input type="text" name="techStack" class="form-control" th:value="${project.techStack}" maxlength="300">
+                                    <input type="text" name="techStack" class="form-control"
+                                        th:value="${project.techStack}" maxlength="300">
                                 </div>
                             </div>
 
-                            <div th:if="${project.rejectedAtStage != null && (project.rejectedAtStage.name() == 'PENDING_FACULTY_REVIEW' || project.rejectedAtStage.name() == 'PENDING_HOD_REVIEW')}">
-                                <h3 class="fs-5 fw-bold mb-4 mt-5 border-bottom border-secondary border-opacity-25 pb-2">Project Files</h3>
-                                
+                            <div
+                                th:if="${project.rejectedAtStage != null && project.rejectedAtStage.name() == 'PROPOSAL_PENDING_FACULTY'}">
+                                <h3
+                                    class="fs-5 fw-bold mb-4 mt-5 border-bottom border-secondary border-opacity-25 pb-2">
+                                    Edit Proposal Documents</h3>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-primary">Synopsis *</label>
+                                    <textarea name="synopsis" class="form-control" rows="3" required
+                                        th:text="${project.synopsis}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Update PowerPoint Presentation (PPT)</label>
+                                    <label class="file-upload w-100 d-block">
+                                        <input type="file" name="pptFile" class="d-none" accept=".ppt,.pptx">
+                                        <div class="upload-icon"><i class="fas fa-file-powerpoint text-warning"></i>
+                                        </div>
+                                        <div class="upload-text text-primary">Click to select new PPT</div>
+                                        <div class="upload-hint">Max 10MB. Leave empty to keep existing.</div>
+                                    </label>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-primary">Problem Statement *</label>
+                                    <textarea name="problemStatement" class="form-control" rows="3" required
+                                        th:text="${project.problemStatement}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-primary">Objectives *</label>
+                                    <textarea name="objectives" class="form-control" rows="3" required
+                                        th:text="${project.objectives}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Literature Review</label>
+                                    <textarea name="literatureReview" class="form-control" rows="4"
+                                        th:text="${project.literatureReview}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-primary">Proposed Methodology *</label>
+                                    <textarea name="methodology" class="form-control" rows="4" required
+                                        th:text="${project.methodology}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-3">
+                                    <label class="form-label text-primary">System Design/Architecture *</label>
+                                    <textarea name="systemDesign" class="form-control" rows="4" required
+                                        th:text="${project.systemDesign}"></textarea>
+                                </div>
+
+                                <div class="form-group mb-4">
+                                    <label class="form-label">Future Work/Plan</label>
+                                    <textarea name="futureWork" class="form-control" rows="3"
+                                        th:text="${project.futureWork}"></textarea>
+                                </div>
+                            </div>
+
+                            <div
+                                th:if="${project.rejectedAtStage != null && (project.rejectedAtStage.name() == 'PENDING_FACULTY_REVIEW' || project.rejectedAtStage.name() == 'PENDING_HOD_REVIEW')}">
+                                <h3
+                                    class="fs-5 fw-bold mb-4 mt-5 border-bottom border-secondary border-opacity-25 pb-2">
+                                    Project Files</h3>
+
                                 <div class="row mb-4">
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Upload New Project Report (PDF)</label>
@@ -62,20 +131,37 @@
                                         <label class="form-label">Upload New Project Source (ZIP)</label>
                                         <label class="file-upload w-100 d-block">
                                             <input type="file" name="projectFile" class="d-none" accept=".zip,.rar">
-                                            <div class="upload-icon"><i class="fas fa-file-archive text-warning"></i></div>
+                                            <div class="upload-icon"><i class="fas fa-file-archive text-warning"></i>
+                                            </div>
                                             <div class="upload-text text-primary">Click to select new source</div>
                                             <div class="upload-hint">Max 10MB. Leave empty to keep existing.</div>
                                         </label>
                                     </div>
                                 </div>
+                                <div class="row mb-4">
+                                    <div class="col-md-6 form-group">
+                                        <label class="form-label">GitHub URL (Optional)</label>
+                                        <input type="url" name="githubUrl" class="form-control"
+                                            placeholder="https://github.com/..." maxlength="500"
+                                            th:value="${project.githubUrl}">
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label class="form-label">Working Video URL (Optional)</label>
+                                        <input type="url" name="videoUrl" class="form-control"
+                                            placeholder="https://youtube.com/..." maxlength="500"
+                                            th:value="${project.videoUrl}">
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <h3 class="fs-5 fw-bold mb-3 mt-4 border-bottom border-secondary border-opacity-25 pb-2">Resubmission Comments</h3>
+
+                            <h3 class="fs-5 fw-bold mb-3 mt-4 border-bottom border-secondary border-opacity-25 pb-2">
+                                Resubmission Comments</h3>
                             <div class="form-group mb-4">
                                 <label class="form-label">Message to Reviewer</label>
-                                <textarea name="comments" class="form-control" rows="3" placeholder="Explain what changes you have made to address the feedback..."></textarea>
+                                <textarea name="comments" class="form-control" rows="3"
+                                    placeholder="Explain what changes you have made to address the feedback..."></textarea>
                             </div>
-                            
+
                             <button type="submit" class="btn btn-warning text-dark w-100 py-2 fs-6 fw-bold">
                                 <i class="fas fa-paper-plane me-2"></i> Submit Revisions
                             </button>
@@ -92,25 +178,30 @@
                     </div>
                     <div class="card-body">
                         <!-- Find the most recent rejection in history -->
-                        <div th:each="hist : ${history}" th:if="${hist.newStatus.name() == 'FACULTY_REJECTED' || hist.newStatus.name() == 'HOD_REJECTED'}" th:limit="1">
-                            
+                        <div th:each="hist : ${history}"
+                            th:if="${hist.newStatus.name() == 'FACULTY_REJECTED' || hist.newStatus.name() == 'HOD_REJECTED'}"
+                            th:limit="1">
+
                             <div class="mb-3 pb-3 border-bottom border-secondary border-opacity-25">
                                 <div class="text-muted small">Rejected by</div>
                                 <div class="fw-bold" th:text="${hist.performedBy.fullName}">Name</div>
                                 <div class="badge bg-secondary mt-1" th:text="${hist.userRole}">Role</div>
-                                <div class="text-muted small mt-1" th:text="${#temporals.format(hist.timestamp, 'dd MMM yy, HH:mm')}">Date</div>
+                                <div class="text-muted small mt-1"
+                                    th:text="${#temporals.format(hist.timestamp, 'dd MMM yy, HH:mm')}">Date</div>
                             </div>
 
                             <div class="mb-3">
                                 <div class="text-danger fw-bold mb-1">Rejection Reason:</div>
-                                <div class="bg-danger bg-opacity-10 p-2 rounded text-danger border border-danger border-opacity-25" th:text="${hist.rejectionReason}">
+                                <div class="bg-danger bg-opacity-10 p-2 rounded text-danger border border-danger border-opacity-25"
+                                    th:text="${hist.rejectionReason}">
                                     Reason
                                 </div>
                             </div>
 
                             <div th:if="${hist.comments != null && !hist.comments.isEmpty()}">
                                 <div class="text-secondary fw-bold mb-1">Additional Comments:</div>
-                                <div class="bg-dark p-2 rounded text-light border border-secondary border-opacity-25" th:text="${hist.comments}">
+                                <div class="bg-dark p-2 rounded text-light border border-secondary border-opacity-25"
+                                    th:text="${hist.comments}">
                                     Comments
                                 </div>
                             </div>
@@ -121,4 +212,5 @@
         </div>
     </main>
 </body>
+
 </html>
