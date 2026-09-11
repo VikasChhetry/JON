@@ -49,16 +49,18 @@ public class FacultyController {
         User faculty = getCurrentUser(auth);
         Branch branch = faculty.getBranch();
 
-        // Pending idea and proposal reviews (Stage 1)
-        List<Project> pendingIdeas = projectService.getProjectsByBranchAndStatuses(branch,
+        // Pending idea and proposal reviews — scoped to THIS faculty's guided students
+        // only
+        List<Project> pendingIdeas = projectService.getProjectsByFacultyGuideAndStatuses(faculty,
                 List.of(ProjectStatus.PROJECT_IDEA_PENDING_FACULTY, ProjectStatus.PROPOSAL_PENDING_FACULTY));
 
-        // Pending project reviews
-        List<Project> pendingReviews = projectService.getProjectsByBranchAndStatuses(branch,
+        // Pending project reviews — scoped to THIS faculty's guided students only
+        List<Project> pendingReviews = projectService.getProjectsByFacultyGuideAndStatuses(faculty,
                 List.of(ProjectStatus.PENDING_FACULTY_REVIEW));
 
-        long totalProjects = projectService.countByBranch(branch);
-        long completedProjects = projectService.countByBranchAndStatus(branch, ProjectStatus.COMPLETED);
+        // Stats: count only projects guided by this faculty
+        long totalProjects = projectService.countByFacultyGuide(faculty);
+        long completedProjects = projectService.countByFacultyGuideAndStatus(faculty, ProjectStatus.COMPLETED);
         long topicCount = topicService.countByBranch(branch);
 
         model.addAttribute("faculty", faculty);
@@ -82,7 +84,8 @@ public class FacultyController {
     @GetMapping("/projects")
     public String listProjects(Authentication auth, Model model) {
         User faculty = getCurrentUser(auth);
-        List<Project> projects = projectService.getProjectsByBranch(faculty.getBranch());
+        // Only show projects where this faculty is the assigned guide
+        List<Project> projects = projectService.getProjectsByFacultyGuide(faculty);
         model.addAttribute("projects", projects);
         model.addAttribute("faculty", faculty);
         return "faculty/projects";
@@ -98,6 +101,14 @@ public class FacultyController {
         if (!project.getBranch().getId().equals(faculty.getBranch().getId())) {
             redirect.addFlashAttribute("error", "Access denied: project belongs to another branch");
             return "redirect:/faculty/dashboard";
+        }
+
+        // Guide enforcement: faculty may only view projects where they are the assigned
+        // guide
+        if (project.getFacultyGuide() == null ||
+                !project.getFacultyGuide().getId().equals(faculty.getId())) {
+            redirect.addFlashAttribute("error", "Access denied: you are not the assigned guide for this project");
+            return "redirect:/faculty/projects";
         }
 
         List<ApprovalHistory> history = projectService.getApprovalHistory(id);

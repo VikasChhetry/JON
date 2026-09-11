@@ -119,6 +119,30 @@ public class ProjectService {
         return projectRepository.findAll();
     }
 
+    /**
+     * Returns only projects where the given faculty is the assigned guide.
+     * Used to restrict faculty-facing project lists to their own guided students.
+     */
+    public List<Project> getProjectsByFacultyGuide(User faculty) {
+        return projectRepository.findByFacultyGuide(faculty);
+    }
+
+    /**
+     * Returns projects for the given faculty guide filtered by a set of statuses.
+     * Used for faculty dashboard pending-review queues.
+     */
+    public List<Project> getProjectsByFacultyGuideAndStatuses(User faculty, List<ProjectStatus> statuses) {
+        return projectRepository.findByFacultyGuideAndStatusIn(faculty, statuses);
+    }
+
+    public long countByFacultyGuide(User faculty) {
+        return projectRepository.countByFacultyGuide(faculty);
+    }
+
+    public long countByFacultyGuideAndStatus(User faculty, ProjectStatus status) {
+        return projectRepository.countByFacultyGuideAndStatus(faculty, status);
+    }
+
     // ==================== Delete Operations ====================
 
     /**

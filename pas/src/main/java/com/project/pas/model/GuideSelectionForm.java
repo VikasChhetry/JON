@@ -33,6 +33,13 @@ public class GuideSelectionForm {
     @Column(nullable = false)
     private boolean active = true;
 
+    /**
+     * Tracks whether the automatic guide assignment has already been processed
+     * for this form after its end date. Prevents duplicate auto-assignments.
+     */
+    @Column(nullable = false)
+    private boolean autoProcessed = false;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -138,5 +145,13 @@ public class GuideSelectionForm {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public boolean isAutoProcessed() {
+        return autoProcessed;
+    }
+
+    public void setAutoProcessed(boolean autoProcessed) {
+        this.autoProcessed = autoProcessed;
     }
 }

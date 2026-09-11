@@ -2,6 +2,8 @@ package com.project.pas.service;
 
 import com.project.pas.model.*;
 import com.project.pas.repository.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,15 +19,17 @@ import java.util.stream.Collectors;
 @Transactional
 public class GuideSelectionService {
 
+    private static final Logger log = LoggerFactory.getLogger(GuideSelectionService.class);
+
     private final GuideSelectionFormRepository formRepository;
     private final GuideAssignmentRepository assignmentRepository;
     private final GuideAssignmentHistoryRepository historyRepository;
     private final UserRepository userRepository;
 
     public GuideSelectionService(GuideSelectionFormRepository formRepository,
-                                  GuideAssignmentRepository assignmentRepository,
-                                  GuideAssignmentHistoryRepository historyRepository,
-                                  UserRepository userRepository) {
+            GuideAssignmentRepository assignmentRepository,
+            GuideAssignmentHistoryRepository historyRepository,
+            UserRepository userRepository) {
         this.formRepository = formRepository;
         this.assignmentRepository = assignmentRepository;
         this.historyRepository = historyRepository;
@@ -119,7 +123,8 @@ public class GuideSelectionService {
         // Ensure capacity isn't set below current assignments
         long currentAssigned = assignmentRepository.countByFaculty(faculty);
         if (maxCapacity < currentAssigned) {
-            throw new IllegalArgumentException("Cannot set capacity below current assignment count (" + currentAssigned + ")");
+            throw new IllegalArgumentException(
+                    "Cannot set capacity below current assignment count (" + currentAssigned + ")");
         }
 
         faculty.setMaxGuidingCapacity(maxCapacity);
@@ -141,7 +146,8 @@ public class GuideSelectionService {
 
         if (!form.isCurrentlyOpen()) {
             if (form.hasNotStarted()) {
-                throw new IllegalStateException("Guide selection has not started yet. It opens on " + form.getStartDateTime());
+                throw new IllegalStateException(
+                        "Guide selection has not started yet. It opens on " + form.getStartDateTime());
             } else {
                 throw new IllegalStateException("Guide selection period has ended");
             }
@@ -166,7 +172,8 @@ public class GuideSelectionService {
             throw new IllegalStateException("This faculty is not available for guiding");
         }
         if (currentAssigned >= faculty.getMaxGuidingCapacity()) {
-            throw new IllegalStateException("This faculty has reached maximum capacity. Please select another faculty.");
+            throw new IllegalStateException(
+                    "This faculty has reached maximum capacity. Please select another faculty.");
         }
 
         // Create assignment
@@ -187,7 +194,8 @@ public class GuideSelectionService {
 
     /**
      * Student removes their own guide selection.
-     * Only allowed if the student selected the guide themselves (assignedBy == "STUDENT").
+     * Only allowed if the student selected the guide themselves (assignedBy ==
+     * "STUDENT").
      * If HOD assigned the guide, the student cannot remove it.
      */
     public void studentRemoveGuide(User student) {
@@ -201,7 +209,7 @@ public class GuideSelectionService {
         if (!"STUDENT".equals(assignment.getAssignedBy())) {
             throw new IllegalStateException(
                     "Cannot remove guide: your guide was assigned by " + assignment.getAssignedBy()
-                    + ". Contact HOD for changes.");
+                            + ". Contact HOD for changes.");
         }
 
         // Check selection period is still active
@@ -296,7 +304,8 @@ public class GuideSelectionService {
         if (previousFaculty == null || !previousFaculty.getId().equals(faculty.getId())) {
             long currentAssigned = assignmentRepository.countByFaculty(faculty);
             if (faculty.getMaxGuidingCapacity() > 0 && currentAssigned >= faculty.getMaxGuidingCapacity()) {
-                throw new IllegalStateException("Faculty has reached maximum capacity (" + faculty.getMaxGuidingCapacity() + ")");
+                throw new IllegalStateException(
+                        "Faculty has reached maximum capacity (" + faculty.getMaxGuidingCapacity() + ")");
             }
         }
 
@@ -357,17 +366,69 @@ public class GuideSelectionService {
     }
 
     /**
-     * HOD triggers auto-assignment for unassigned students in their branch.
-     * Distributes students evenly among faculty with available capacity.
+     * HOD triggers manual auto-assignment for unassigned students in their branch.
+     * Delegates to the shared internal doAutoAssign() method.
+     * This is idempotent — students who already have a guide are skipped.
      */
     public int autoAssignUnassignedStudents(User hod) {
         validateHod(hod);
-        Branch branch = hod.getBranch();
+        return doAutoAssign(hod.getBranch(), hod);
+    }
 
-        // Get all students in the branch
+    /**
+     * Called by the scheduler to process all active selection forms that have
+     * expired (endDateTime passed) but have not yet been auto-processed.
+     *
+     * For each such form:
+     * 1. Finds all unassigned students in that branch.
+     * 2. Assigns them to faculty with available capacity (lowest-load first).
+     * 3. Records GuideAssignmentHistory with action "AUTO ASSIGNED GUIDE".
+     * 4. Marks the form autoProcessed = true to prevent re-processing.
+     *
+     * This method is safe to call multiple times — it will not create duplicate
+     * assignments because already-assigned students are filtered out, and the
+     * autoProcessed flag prevents the form from being processed again.
+     */
+    public void processExpiredForms() {
+        List<GuideSelectionForm> expiredForms = formRepository.findExpiredUnprocessedForms(LocalDateTime.now());
+        if (expiredForms.isEmpty()) {
+            return;
+        }
+
+        for (GuideSelectionForm form : expiredForms) {
+            Branch branch = form.getBranch();
+            // Use the HOD who created the form as the recorded performer for history
+            User formCreator = form.getCreatedBy();
+            log.info("[AutoAssign] Processing expired form id={} for branch={}", form.getId(), branch.getCode());
+            try {
+                int assigned = doAutoAssign(branch, formCreator);
+                log.info("[AutoAssign] Auto-assigned {} student(s) in branch {}", assigned, branch.getCode());
+            } catch (Exception ex) {
+                log.error("[AutoAssign] Error during auto-assignment for branch {}: {}", branch.getCode(),
+                        ex.getMessage(), ex);
+            }
+            // Mark processed regardless — even if 0 were assigned (all already assigned)
+            form.setAutoProcessed(true);
+            formRepository.save(form);
+        }
+    }
+
+    /**
+     * Core auto-assignment logic shared by both the HOD manual button and the
+     * scheduler. Assigns unassigned students in `branch` to faculty with the
+     * lowest current load, respecting capacity limits. Never creates a second
+     * GuideAssignment for a student who already has one.
+     *
+     * @param branch      the branch to process
+     * @param performedBy the User to record as the history performer (null for
+     *                    scheduler/AUTO)
+     * @return number of students actually assigned in this invocation
+     */
+    private int doAutoAssign(Branch branch, User performedBy) {
+        // All students in this branch
         List<User> allStudents = userRepository.findByBranchAndRole(branch, Role.STUDENT);
 
-        // Filter to only unassigned students
+        // Only those without a guide
         List<User> unassigned = allStudents.stream()
                 .filter(s -> !assignmentRepository.existsByStudent(s))
                 .collect(Collectors.toList());
@@ -376,17 +437,18 @@ public class GuideSelectionService {
             return 0;
         }
 
-        // Get faculty with available capacity
         List<User> facultyList = userRepository.findByBranchAndRole(branch, Role.FACULTY);
+        Optional<GuideSelectionForm> activeForm = getActiveForm(branch);
 
         int assignedCount = 0;
         for (User student : unassigned) {
-            // Find faculty with lowest assignment count that still has capacity
+            // Pick the faculty with the lowest current load that still has capacity
             User bestFaculty = null;
             long lowestCount = Long.MAX_VALUE;
 
             for (User f : facultyList) {
-                if (f.getMaxGuidingCapacity() <= 0) continue;
+                if (f.getMaxGuidingCapacity() <= 0)
+                    continue;
                 long count = assignmentRepository.countByFaculty(f);
                 if (count < f.getMaxGuidingCapacity() && count < lowestCount) {
                     lowestCount = count;
@@ -395,7 +457,13 @@ public class GuideSelectionService {
             }
 
             if (bestFaculty == null) {
-                break; // No more capacity available
+                break; // No remaining capacity across any faculty
+            }
+
+            // Guard: do not create a second assignment for this student in case of
+            // concurrency
+            if (assignmentRepository.existsByStudent(student)) {
+                continue;
             }
 
             GuideAssignment assignment = new GuideAssignment();
@@ -403,11 +471,12 @@ public class GuideSelectionService {
             assignment.setFaculty(bestFaculty);
             assignment.setBranch(branch);
             assignment.setAssignedBy("AUTO");
-            getActiveForm(branch).ifPresent(assignment::setSelectionForm);
+            activeForm.ifPresent(assignment::setSelectionForm);
             assignmentRepository.save(assignment);
 
-            recordHistory("Auto-assigned student to faculty", hod, student, null, bestFaculty,
-                    "Automatic assignment by system", branch);
+            // Record history
+            String reason = "Automatically assigned after guide selection period ended";
+            recordHistory("AUTO ASSIGNED GUIDE", performedBy, student, null, bestFaculty, reason, branch);
             assignedCount++;
         }
 
@@ -432,7 +501,8 @@ public class GuideSelectionService {
 
     /**
      * Get faculty capacity info for a branch (for display).
-     * Returns a list of maps with faculty info, maxCapacity, assigned count, vacancies.
+     * Returns a list of maps with faculty info, maxCapacity, assigned count,
+     * vacancies.
      */
     public List<Map<String, Object>> getFacultyCapacityInfo(Branch branch) {
         List<User> facultyList = userRepository.findByBranchAndRole(branch, Role.FACULTY);
@@ -491,8 +561,8 @@ public class GuideSelectionService {
     // ==================== History Recording ====================
 
     private void recordHistory(String action, User performedBy, User student,
-                               User previousFaculty, User newFaculty,
-                               String reason, Branch branch) {
+            User previousFaculty, User newFaculty,
+            String reason, Branch branch) {
         GuideAssignmentHistory history = new GuideAssignmentHistory();
         history.setAction(action);
         history.setPerformedBy(performedBy);
