@@ -69,6 +69,20 @@ public class ProjectService {
     }
 
     /**
+     * Project Details become locked permanently once the initial proposal has been
+     * approved.
+     */
+    public boolean isProjectDetailsLocked(Long projectId) {
+        List<ApprovalHistory> history = getApprovalHistory(projectId);
+        for (ApprovalHistory h : history) {
+            if (h.getNewStatus() == ProjectStatus.PROPOSAL_APPROVED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check if student has an active (non-completed) project.
      */
     public boolean hasActiveProject(User student) {
@@ -508,6 +522,10 @@ public class ProjectService {
      * Student resubmits after rejection.
      * Goes back to the stage where it was rejected (idea, proposal, faculty review,
      * or HOD).
+     *
+     * IMPORTANT: Core project details (title, description, category, techStack)
+     * are NEVER modified during resubmission. Only proposal documents and/or
+     * project files may be updated as per the correction workflow.
      */
     public void resubmit(Project project, User student, String reportPath, String projectPath,
             String githubUrl, String videoUrl, String comments) {
@@ -518,6 +536,10 @@ public class ProjectService {
                 project.getStatus() != ProjectStatus.HOD_REJECTED) {
             throw new IllegalStateException("Can only resubmit from a rejected status");
         }
+
+        // SAFETY GUARD: The following fields are intentionally NOT updated here.
+        // title, description, category, techStack remain as originally submitted.
+        // They are read-only during resubmission and must not be changed.
 
         ProjectStatus previousStatus = project.getStatus();
 
@@ -571,10 +593,28 @@ public class ProjectService {
             throw new IllegalStateException("Can only edit project when it has been rejected");
         }
 
-        project.setTitle(title);
-        project.setDescription(description);
-        project.setCategory(category);
-        project.setTechStack(techStack);
+        boolean isLocked = isProjectDetailsLocked(project.getId());
+
+        if (isLocked) {
+            String strTitle = (title == null) ? "" : title.trim();
+            String pTitle = (project.getTitle() == null) ? "" : project.getTitle().trim();
+            String strDesc = (description == null) ? "" : description.trim();
+            String pDesc = (project.getDescription() == null) ? "" : project.getDescription().trim();
+            String strCat = (category == null) ? "" : category.trim();
+            String pCat = (project.getCategory() == null) ? "" : project.getCategory().trim();
+            String strTech = (techStack == null) ? "" : techStack.trim();
+            String pTech = (project.getTechStack() == null) ? "" : project.getTechStack().trim();
+
+            if (!strTitle.equals(pTitle) || !strDesc.equals(pDesc) || !strCat.equals(pCat) || !strTech.equals(pTech)) {
+                throw new IllegalStateException(
+                        "Project Details are locked and cannot be modified after proposal approval.");
+            }
+        } else {
+            project.setTitle(title);
+            project.setDescription(description);
+            project.setCategory(category);
+            project.setTechStack(techStack);
+        }
         projectRepository.save(project);
     }
 

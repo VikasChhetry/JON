@@ -9,7 +9,8 @@
         <div class="d-flex justify-content-between align-items-start mb-4">
             <div class="page-header mb-0">
                 <h1>Edit & Resubmit Project</h1>
-                <p>Update your project details and files based on reviewer feedback</p>
+                <p>Address reviewer feedback. Core project details below are <strong>read-only</strong> and cannot be
+                    changed.</p>
             </div>
             <a th:href="@{'/student/project/' + ${project.id}}" class="btn btn-outline">Cancel</a>
         </div>
@@ -26,28 +27,43 @@
                             <h3 class="fs-5 fw-bold mb-4 border-bottom border-secondary border-opacity-25 pb-2">Project
                                 Details</h3>
 
-                            <div class="form-group mb-3">
-                                <label class="form-label text-primary">Project Title *</label>
-                                <input type="text" name="title" class="form-control" th:value="${project.title}"
-                                    required maxlength="200">
+                            <!-- READ-ONLY SECTION: These fields cannot be edited on resubmission -->
+                            <div class="alert alert-secondary d-flex align-items-center gap-2 mb-4 py-2 px-3"
+                                role="alert" style="border-left: 4px solid #6c757d;">
+                                <i class="fas fa-lock text-secondary"></i>
+                                <small class="text-muted">The fields below are <strong>locked</strong> and cannot be
+                                    modified during resubmission.</small>
                             </div>
 
                             <div class="form-group mb-3">
-                                <label class="form-label text-primary">Detailed Description *</label>
-                                <textarea name="description" class="form-control" rows="6" required
-                                    th:text="${project.description}"></textarea>
+                                <label class="form-label text-secondary"><i class="fas fa-lock me-1 fs-7"></i> Project
+                                    Title</label>
+                                <div class="form-control bg-secondary bg-opacity-10 text-light border-secondary border-opacity-25"
+                                    style="cursor:not-allowed; min-height:38px;" th:text="${project.title}"></div>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="form-label text-secondary"><i class="fas fa-lock me-1 fs-7"></i> Detailed
+                                    Description</label>
+                                <div class="form-control bg-secondary bg-opacity-10 text-light border-secondary border-opacity-25"
+                                    style="cursor:not-allowed; min-height:120px; white-space:pre-wrap;"
+                                    th:text="${project.description}"></div>
                             </div>
 
                             <div class="row mb-4">
                                 <div class="col-md-6 form-group">
-                                    <label class="form-label">Category</label>
-                                    <input type="text" name="category" class="form-control"
-                                        th:value="${project.category}" maxlength="100">
+                                    <label class="form-label text-secondary"><i class="fas fa-lock me-1 fs-7"></i>
+                                        Category</label>
+                                    <div class="form-control bg-secondary bg-opacity-10 text-light border-secondary border-opacity-25"
+                                        style="cursor:not-allowed; min-height:38px;"
+                                        th:text="${project.category ?: '—'}"></div>
                                 </div>
                                 <div class="col-md-6 form-group">
-                                    <label class="form-label">Tech Stack</label>
-                                    <input type="text" name="techStack" class="form-control"
-                                        th:value="${project.techStack}" maxlength="300">
+                                    <label class="form-label text-secondary"><i class="fas fa-lock me-1 fs-7"></i> Tech
+                                        Stack</label>
+                                    <div class="form-control bg-secondary bg-opacity-10 text-light border-secondary border-opacity-25"
+                                        style="cursor:not-allowed; min-height:38px;"
+                                        th:text="${project.techStack ?: '—'}"></div>
                                 </div>
                             </div>
 

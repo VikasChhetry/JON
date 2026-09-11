@@ -292,17 +292,22 @@ public class StudentController {
         }
 
         List<ApprovalHistory> history = projectService.getApprovalHistory(id);
+
+        boolean isLocked = projectService.isProjectDetailsLocked(id);
+
         model.addAttribute("project", project);
         model.addAttribute("history", history);
         model.addAttribute("student", student);
+        model.addAttribute("isLocked", isLocked);
         return "student/project-edit";
     }
 
     @PostMapping("/project/{id}/edit")
     public String editAndResubmit(Authentication auth, @PathVariable Long id,
-            @RequestParam String title, @RequestParam String description,
-            @RequestParam(required = false) String category,
-            @RequestParam(required = false) String techStack,
+            // NOTE: title, description, category, techStack are intentionally NOT accepted
+            // here.
+            // Core project details are read-only during resubmission and must never be
+            // updated.
             @RequestParam(required = false) String comments,
             @RequestParam(required = false) MultipartFile reportFile,
             @RequestParam(required = false) MultipartFile projectFile,
@@ -323,8 +328,10 @@ public class StudentController {
             Project project = projectService.getProjectById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
-            // Edit project details
-            projectService.editProject(project, student, title, description, category, techStack);
+            // Core project details (title, description, category, techStack) are NOT
+            // updated here.
+            // They are read-only during resubmission - only proposal/file corrections are
+            // allowed.
 
             // If rejected at proposal stage, also update proposal fields
             if (project.getRejectedAtStage() == ProjectStatus.PROPOSAL_PENDING_FACULTY) {
