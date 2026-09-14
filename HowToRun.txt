@@ -1,4 +1,4 @@
-
+RUN THIS ON THE CMD TERMINAL
 .\mvnw.cmd spring-boot:run
 set MAIL_USERNAME=pwebsite18@gmail.com
 set MAIL_PASSWORD=wqjw kscw gaum lzmv 

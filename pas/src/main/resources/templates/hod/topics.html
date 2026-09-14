@@ -26,6 +26,7 @@
                             <th>Title</th>
                             <th>Category</th>
                             <th>Tech Stack</th>
+                            <th>Team Size</th>
                             <th>Status</th>
                             <th>Created By</th>
                             <th class="text-end">Actions</th>
@@ -36,6 +37,8 @@
                             <td class="fw-bold" th:text="${topic.title}">Title</td>
                             <td th:text="${topic.category}">Category</td>
                             <td th:text="${topic.techStack}">Tech Stack</td>
+                            <td><span th:text="${topic.minTeamSize}"></span> - <span
+                                    th:text="${topic.maxTeamSize}"></span></td>
                             <td>
                                 <span class="badge"
                                     th:classappend="${topic.status.name() == 'AVAILABLE' ? 'bg-success' : (topic.status.name() == 'ASSIGNED' ? 'bg-info' : 'bg-secondary')}"
@@ -81,7 +84,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(topics)}">
-                            <td colspan="6" class="text-center py-4 text-muted">
+                            <td colspan="7" class="text-center py-4 text-muted">
                                 No topics found. <a th:href="@{/hod/topics/new}">Create one</a>
                             </td>
                         </tr>

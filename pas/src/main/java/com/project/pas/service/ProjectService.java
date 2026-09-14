@@ -4,6 +4,7 @@ import com.project.pas.model.*;
 import com.project.pas.repository.ApprovalHistoryRepository;
 import com.project.pas.repository.GuideAssignmentRepository;
 import com.project.pas.repository.ProjectRepository;
+import com.project.pas.repository.ProjectTeamMemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,20 +31,27 @@ public class ProjectService {
     private final ApprovalHistoryRepository historyRepository;
     private final ProjectTopicService topicService;
     private final GuideAssignmentRepository guideAssignmentRepository;
+    private final ProjectTeamMemberRepository teamMemberRepository;
 
     // Statuses that indicate a project is "finished" — student can start another
     // one
     private static final List<ProjectStatus> TERMINAL_STATUSES = Arrays.asList(
             ProjectStatus.COMPLETED);
 
+    // Default team size limits for OWN PROJECT IDEAS (no topic configured)
+    private static final int DEFAULT_MIN_TEAM_SIZE = 1;
+    private static final int DEFAULT_MAX_TEAM_SIZE = 4;
+
     public ProjectService(ProjectRepository projectRepository,
             ApprovalHistoryRepository historyRepository,
             ProjectTopicService topicService,
-            GuideAssignmentRepository guideAssignmentRepository) {
+            GuideAssignmentRepository guideAssignmentRepository,
+            ProjectTeamMemberRepository teamMemberRepository) {
         this.projectRepository = projectRepository;
         this.historyRepository = historyRepository;
         this.topicService = topicService;
         this.guideAssignmentRepository = guideAssignmentRepository;
+        this.teamMemberRepository = teamMemberRepository;
     }
 
     // ==================== Queries ====================
@@ -308,6 +316,24 @@ public class ProjectService {
                     "Cannot submit proposal in current status: " + project.getStatus().getDisplayName());
         }
 
+        // ===== Validate team size =====
+        int[] teamLimits = getTeamSizeLimits(project);
+        int minTeam = teamLimits[0];
+        int maxTeam = teamLimits[1];
+        long currentTeamSize = teamMemberRepository.countByProject(project);
+
+        if (currentTeamSize < minTeam) {
+            throw new IllegalStateException(
+                    "Team size is too small. You have " + currentTeamSize +
+                            " member(s) but the minimum required is " + minTeam +
+                            " (including you as team leader). Please add more team members.");
+        }
+        if (currentTeamSize > maxTeam) {
+            throw new IllegalStateException(
+                    "Team size exceeds maximum allowed. You have " + currentTeamSize +
+                            " member(s) but the maximum allowed is " + maxTeam + ".");
+        }
+
         ProjectStatus previousStatus = project.getStatus();
 
         // Save proposal fields
@@ -326,6 +352,162 @@ public class ProjectService {
 
         recordHistory(project, "Submitted project proposal for faculty review", student, previousStatus,
                 ProjectStatus.PROPOSAL_PENDING_FACULTY, null, null);
+    }
+
+    // ==================== Team Member Management ====================
+
+    /**
+     * Returns the [min, max] team size for a project.
+     * For TOPIC_BASED projects, uses the topic's configured limits.
+     * For CUSTOM (own idea) projects, uses system defaults.
+     */
+    public int[] getTeamSizeLimits(Project project) {
+        if (project.getProjectType() == ProjectType.TOPIC_BASED && project.getTopic() != null) {
+            return new int[] { project.getTopic().getMinTeamSize(), project.getTopic().getMaxTeamSize() };
+        }
+        return new int[] { DEFAULT_MIN_TEAM_SIZE, DEFAULT_MAX_TEAM_SIZE };
+    }
+
+    /**
+     * Get all team members for a project.
+     */
+    public List<ProjectTeamMember> getTeamMembers(Project project) {
+        return teamMemberRepository.findByProject(project);
+    }
+
+    /**
+     * Get all memberships for a student.
+     */
+    public List<ProjectTeamMember> getTeamMemberships(User student) {
+        return teamMemberRepository.findByMember(student);
+    }
+
+    /**
+     * Add a team member to a project.
+     * Validates: same branch, student role, not duplicate, not in another active
+     * project,
+     * capacity not exceeded.
+     */
+    public ProjectTeamMember addTeamMember(Project project, User owner, User member, String contributionRole) {
+        validateStudent(owner);
+        validateOwner(project, owner);
+
+        // Validate member is a student
+        if (member.getRole() != Role.STUDENT) {
+            throw new IllegalArgumentException("Only students can be added as team members");
+        }
+
+        // Same branch
+        if (member.getBranch() == null || !member.getBranch().getId().equals(project.getBranch().getId())) {
+            throw new IllegalArgumentException(
+                    "Team member must belong to the same branch (" + project.getBranch().getCode() + ")");
+        }
+
+        // Not already in this project's team
+        if (teamMemberRepository.existsByProjectAndMember(project, member)) {
+            throw new IllegalArgumentException("This student is already a team member of this project");
+        }
+
+        // Not in another active project (as owner or team member)
+        if (!member.getId().equals(owner.getId())) {
+            // Check if member owns another active project
+            Optional<Project> memberActiveProject = getActiveProject(member);
+            if (memberActiveProject.isPresent() && !memberActiveProject.get().getId().equals(project.getId())) {
+                throw new IllegalArgumentException(
+                        member.getFullName() + " already has an active project and cannot join another team");
+            }
+            // Check if member is on another project's team
+            List<ProjectTeamMember> existingMemberships = teamMemberRepository.findByMember(member);
+            for (ProjectTeamMember existing : existingMemberships) {
+                Project otherProject = existing.getProject();
+                if (!otherProject.getId().equals(project.getId()) &&
+                        !TERMINAL_STATUSES.contains(otherProject.getStatus())) {
+                    throw new IllegalArgumentException(
+                            member.getFullName() + " is already a team member of another active project");
+                }
+            }
+        }
+
+        // Check capacity
+        int[] limits = getTeamSizeLimits(project);
+        long currentSize = teamMemberRepository.countByProject(project);
+        if (currentSize >= limits[1]) {
+            throw new IllegalStateException(
+                    "Maximum team size (" + limits[1] + ") reached. Cannot add more members.");
+        }
+
+        // Contribution role is required
+        if (contributionRole == null || contributionRole.trim().isEmpty()) {
+            throw new IllegalArgumentException("Contribution/Role is required for each team member");
+        }
+
+        ProjectTeamMember teamMember = new ProjectTeamMember();
+        teamMember.setProject(project);
+        teamMember.setMember(member);
+        teamMember.setContributionRole(contributionRole.trim());
+        teamMember.setOwner(member.getId().equals(owner.getId()));
+
+        return teamMemberRepository.save(teamMember);
+    }
+
+    /**
+     * Remove a team member from a project.
+     * Cannot remove the project owner.
+     */
+    public void removeTeamMember(Project project, User owner, Long memberId) {
+        validateStudent(owner);
+        validateOwner(project, owner);
+
+        ProjectTeamMember teamMember = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Team member not found"));
+
+        if (!teamMember.getProject().getId().equals(project.getId())) {
+            throw new IllegalArgumentException("Team member does not belong to this project");
+        }
+
+        if (teamMember.isOwner()) {
+            throw new IllegalStateException("Cannot remove the project owner from the team");
+        }
+
+        teamMemberRepository.delete(teamMember);
+    }
+
+    /**
+     * Update a team member's contribution role.
+     */
+    public void updateTeamMemberRole(Project project, User owner, Long memberId, String newRole) {
+        validateStudent(owner);
+        validateOwner(project, owner);
+
+        if (newRole == null || newRole.trim().isEmpty()) {
+            throw new IllegalArgumentException("Contribution/Role is required");
+        }
+
+        ProjectTeamMember teamMember = teamMemberRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Team member not found"));
+
+        if (!teamMember.getProject().getId().equals(project.getId())) {
+            throw new IllegalArgumentException("Team member does not belong to this project");
+        }
+
+        teamMember.setContributionRole(newRole.trim());
+        teamMemberRepository.save(teamMember);
+    }
+
+    /**
+     * Ensures the project owner is included as a team member.
+     * Called when the proposal form is first loaded.
+     */
+    public void ensureOwnerInTeam(Project project) {
+        User owner = project.getStudent();
+        if (!teamMemberRepository.existsByProjectAndMember(project, owner)) {
+            ProjectTeamMember ownerMember = new ProjectTeamMember();
+            ownerMember.setProject(project);
+            ownerMember.setMember(owner);
+            ownerMember.setContributionRole("Team Leader / Project Owner");
+            ownerMember.setOwner(true);
+            teamMemberRepository.save(ownerMember);
+        }
     }
 
     // ==================== Faculty Idea Review ====================
@@ -659,6 +841,24 @@ public class ProjectService {
 
         if (project.getRejectedAtStage() != ProjectStatus.PROPOSAL_PENDING_FACULTY) {
             throw new IllegalStateException("Proposal can only be edited when rejected at the proposal stage");
+        }
+
+        // ===== Validate team size =====
+        int[] teamLimits = getTeamSizeLimits(project);
+        int minTeam = teamLimits[0];
+        int maxTeam = teamLimits[1];
+        long currentTeamSize = teamMemberRepository.countByProject(project);
+
+        if (currentTeamSize < minTeam) {
+            throw new IllegalStateException(
+                    "Team size is too small. You have " + currentTeamSize +
+                            " member(s) but the minimum required is " + minTeam +
+                            " (including you as team leader). Please add more team members.");
+        }
+        if (currentTeamSize > maxTeam) {
+            throw new IllegalStateException(
+                    "Team size exceeds maximum allowed. You have " + currentTeamSize +
+                            " member(s) but the maximum allowed is " + maxTeam + ".");
         }
 
         project.setSynopsis(synopsis);

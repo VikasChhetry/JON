@@ -162,10 +162,12 @@ public class HodController {
             @RequestParam String title, @RequestParam String description,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String techStack,
+            @RequestParam(defaultValue = "1") int minTeamSize,
+            @RequestParam(defaultValue = "4") int maxTeamSize,
             RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
-            topicService.createTopic(title, description, category, techStack, hod);
+            topicService.createTopic(title, description, category, techStack, minTeamSize, maxTeamSize, hod);
             redirect.addFlashAttribute("success", "Topic created successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -252,10 +254,12 @@ public class HodController {
             @RequestParam String title, @RequestParam String description,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String techStack,
+            @RequestParam(defaultValue = "1") int minTeamSize,
+            @RequestParam(defaultValue = "4") int maxTeamSize,
             RedirectAttributes redirect) {
         User hod = getCurrentUser(auth);
         try {
-            topicService.updateTopic(id, title, description, category, techStack, hod);
+            topicService.updateTopic(id, title, description, category, techStack, minTeamSize, maxTeamSize, hod);
             redirect.addFlashAttribute("success", "Topic updated successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());

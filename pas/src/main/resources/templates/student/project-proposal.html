@@ -20,6 +20,118 @@
             <div class="col-lg-8">
                 <div class="content-card">
                     <div class="card-body">
+
+                        <!-- ==================== TEAM MEMBERS SECTION ==================== -->
+                        <div class="mb-5">
+                            <div
+                                class="d-flex justify-content-between align-items-center border-bottom border-secondary border-opacity-25 pb-2 mb-4">
+                                <h3 class="fs-5 fw-bold mb-0">Team Members</h3>
+                                <div class="badge bg-secondary">
+                                    Size: <span th:text="${#lists.size(teamMembers)}"></span> / <span
+                                        th:text="${maxTeamSize}"></span>
+                                    (Min: <span th:text="${minTeamSize}"></span>)
+                                </div>
+                            </div>
+
+                            <!-- Current Team List -->
+                            <div class="table-responsive mb-4">
+                                <table class="table table-dark table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>ERP / Roll</th>
+                                            <th>Email</th>
+                                            <th>Role / Contribution</th>
+                                            <th class="text-end">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="member : ${teamMembers}">
+                                            <td>
+                                                <span th:text="${member.member.fullName}"></span>
+                                                <span th:if="${member.isOwner}" class="badge bg-primary ms-2"
+                                                    style="font-size: 0.7em;">Owner</span>
+                                            </td>
+                                            <td>
+                                                <div th:text="${member.member.erpId ?: 'N/A'}"></div>
+                                                <div class="text-secondary small"
+                                                    th:text="${member.member.rollNumber ?: 'N/A'}"></div>
+                                            </td>
+                                            <td th:text="${member.member.email}"></td>
+                                            <td>
+                                                <!-- If not owner, allow updating role -->
+                                                <span th:if="${member.isOwner}"
+                                                    th:text="${member.contributionRole}"></span>
+                                                <form th:unless="${member.isOwner}"
+                                                    th:action="@{'/student/project/' + ${project.id} + '/team/update/' + ${member.id}}"
+                                                    method="post" class="d-flex gap-2">
+                                                    <input type="text" name="contributionRole"
+                                                        th:value="${member.contributionRole}"
+                                                        class="form-control form-control-sm bg-dark text-light border-secondary"
+                                                        required>
+                                                    <button type="submit" class="btn btn-sm btn-outline-primary"
+                                                        title="Update Role"><i class="fas fa-save"></i></button>
+                                                </form>
+                                            </td>
+                                            <td class="text-end">
+                                                <!-- Reomve button (not for owner) -->
+                                                <form th:unless="${member.isOwner}"
+                                                    th:action="@{'/student/project/' + ${project.id} + '/team/remove/' + ${member.id}}"
+                                                    method="post" class="d-inline"
+                                                    onsubmit="return confirm('Remove this team member?');">
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i
+                                                            class="fas fa-times"></i></button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Add Member Form -->
+                            <div th:if="${#lists.size(teamMembers) < maxTeamSize}"
+                                class="card bg-dark border border-secondary border-opacity-50">
+                                <div class="card-body py-3">
+                                    <h6 class="text-light mb-3"><i class="fas fa-user-plus me-2"></i>Add Team Member
+                                    </h6>
+                                    <form th:action="@{'/student/project/' + ${project.id} + '/team/add'}" method="post"
+                                        class="row g-3 align-items-end">
+                                        <div class="col-md-5">
+                                            <label class="form-label small text-secondary">Student</label>
+                                            <select name="memberId"
+                                                class="form-select bg-dark text-light border-secondary" required>
+                                                <option value="" disabled selected>Select from available students...
+                                                </option>
+                                                <option th:each="availStudent : ${availableStudents}"
+                                                    th:value="${availStudent.id}"
+                                                    th:text="${availStudent.fullName + ' (' + (availStudent.erpId ?: availStudent.email) + ')'}">
+                                                </option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-5">
+                                            <label class="form-label small text-secondary">Contribution / Role (e.g.,
+                                                Backend Developer)</label>
+                                            <input type="text" name="contributionRole"
+                                                class="form-control bg-dark text-light border-secondary"
+                                                placeholder="Enter role..." required>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button type="submit" class="btn btn-secondary w-100">Add</button>
+                                        </div>
+                                    </form>
+                                    <div th:if="${#lists.isEmpty(availableStudents)}" class="text-warning small mt-2">
+                                        <i class="fas fa-exclamation-triangle me-1"></i> No available students found in
+                                        your branch.
+                                    </div>
+                                </div>
+                            </div>
+                            <div th:if="${#lists.size(teamMembers) >= maxTeamSize}"
+                                class="alert alert-secondary py-2 mb-0 text-center">
+                                Maximum team size reached.
+                            </div>
+                        </div>
+
+                        <!-- Main Proposal Form -->
                         <form th:action="@{'/student/project/' + ${project.id} + '/proposal'}" method="post"
                             enctype="multipart/form-data" data-validate>
 

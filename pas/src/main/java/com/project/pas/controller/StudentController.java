@@ -166,9 +166,101 @@ public class StudentController {
             return "redirect:/student/project/" + id;
         }
 
+        // Ensure owner is in the team
+        projectService.ensureOwnerInTeam(project);
+
+        // Load team members and limits
+        List<ProjectTeamMember> teamMembers = projectService.getTeamMembers(project);
+        int[] limits = projectService.getTeamSizeLimits(project);
+
+        // Load available students from the same branch for the dropdown
+        List<User> branchStudents = userService.getUsersByBranchAndRole(student.getBranch(), Role.STUDENT);
+        List<User> availableStudents = new java.util.ArrayList<>();
+        for (User u : branchStudents) {
+            // Exclude the current student and any student already in an active project
+            if (!u.getId().equals(student.getId())) {
+                boolean hasActive = false;
+                if (projectService.getActiveProject(u).isPresent()) {
+                    hasActive = true;
+                } else {
+                    List<ProjectTeamMember> memberships = projectService.getTeamMemberships(u);
+                    for (ProjectTeamMember ptm : memberships) {
+                        if (!ptm.getProject().getStatus().name().equals("COMPLETED")) {
+                            hasActive = true;
+                            break;
+                        }
+                    }
+                }
+                if (!hasActive) {
+                    availableStudents.add(u);
+                }
+            }
+        }
+
         model.addAttribute("project", project);
         model.addAttribute("student", student);
+        model.addAttribute("teamMembers", teamMembers);
+        model.addAttribute("minTeamSize", limits[0]);
+        model.addAttribute("maxTeamSize", limits[1]);
+        model.addAttribute("availableStudents", availableStudents);
         return "student/project-proposal";
+    }
+
+    // ==================== Team Member Management Endpoints ====================
+
+    @PostMapping("/project/{id}/team/add")
+    public String addTeamMember(Authentication auth, @PathVariable Long id,
+            @RequestParam Long memberId,
+            @RequestParam String contributionRole,
+            RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+            User member = userService.getUserById(memberId)
+                    .orElseThrow(() -> new IllegalArgumentException("Student not found"));
+
+            projectService.addTeamMember(project, student, member, contributionRole);
+            redirect.addFlashAttribute("success", member.getFullName() + " added to the team");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/project/" + id + "/proposal";
+    }
+
+    @PostMapping("/project/{id}/team/remove/{memberId}")
+    public String removeTeamMember(Authentication auth, @PathVariable Long id,
+            @PathVariable Long memberId,
+            RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+            projectService.removeTeamMember(project, student, memberId);
+            redirect.addFlashAttribute("success", "Team member removed");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/project/" + id + "/proposal";
+    }
+
+    @PostMapping("/project/{id}/team/update/{memberId}")
+    public String updateTeamMemberRole(Authentication auth, @PathVariable Long id,
+            @PathVariable Long memberId,
+            @RequestParam String contributionRole,
+            RedirectAttributes redirect) {
+        User student = getCurrentUser(auth);
+        try {
+            Project project = projectService.getProjectById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+
+            projectService.updateTeamMemberRole(project, student, memberId, contributionRole);
+            redirect.addFlashAttribute("success", "Team member role updated");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/student/project/" + id + "/proposal";
     }
 
     @PostMapping("/project/{id}/proposal")
@@ -294,6 +386,38 @@ public class StudentController {
         List<ApprovalHistory> history = projectService.getApprovalHistory(id);
 
         boolean isLocked = projectService.isProjectDetailsLocked(id);
+
+        if (project.getRejectedAtStage() == ProjectStatus.PROPOSAL_PENDING_FACULTY) {
+            projectService.ensureOwnerInTeam(project);
+            List<ProjectTeamMember> teamMembers = projectService.getTeamMembers(project);
+            int[] limits = projectService.getTeamSizeLimits(project);
+
+            List<User> branchStudents = userService.getUsersByBranchAndRole(student.getBranch(), Role.STUDENT);
+            List<User> availableStudents = new java.util.ArrayList<>();
+            for (User u : branchStudents) {
+                if (!u.getId().equals(student.getId())) {
+                    boolean hasActive = false;
+                    if (projectService.getActiveProject(u).isPresent()) {
+                        hasActive = true;
+                    } else {
+                        List<ProjectTeamMember> memberships = projectService.getTeamMemberships(u);
+                        for (ProjectTeamMember ptm : memberships) {
+                            if (!ptm.getProject().getStatus().name().equals("COMPLETED")) {
+                                hasActive = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!hasActive) {
+                        availableStudents.add(u);
+                    }
+                }
+            }
+            model.addAttribute("teamMembers", teamMembers);
+            model.addAttribute("minTeamSize", limits[0]);
+            model.addAttribute("maxTeamSize", limits[1]);
+            model.addAttribute("availableStudents", availableStudents);
+        }
 
         model.addAttribute("project", project);
         model.addAttribute("history", history);

@@ -112,9 +112,11 @@ public class FacultyController {
         }
 
         List<ApprovalHistory> history = projectService.getApprovalHistory(id);
+        List<ProjectTeamMember> teamMembers = projectService.getTeamMembers(project);
 
         model.addAttribute("project", project);
         model.addAttribute("history", history);
+        model.addAttribute("teamMembers", teamMembers);
         model.addAttribute("faculty", faculty);
         return "faculty/project-review";
     }
@@ -247,10 +249,12 @@ public class FacultyController {
             @RequestParam String title, @RequestParam String description,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String techStack,
+            @RequestParam(defaultValue = "1") int minTeamSize,
+            @RequestParam(defaultValue = "4") int maxTeamSize,
             RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
-            topicService.createTopic(title, description, category, techStack, faculty);
+            topicService.createTopic(title, description, category, techStack, minTeamSize, maxTeamSize, faculty);
             redirect.addFlashAttribute("success", "Topic created successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -337,10 +341,12 @@ public class FacultyController {
             @RequestParam String title, @RequestParam String description,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String techStack,
+            @RequestParam(defaultValue = "1") int minTeamSize,
+            @RequestParam(defaultValue = "4") int maxTeamSize,
             RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
-            topicService.updateTopic(id, title, description, category, techStack, faculty);
+            topicService.updateTopic(id, title, description, category, techStack, minTeamSize, maxTeamSize, faculty);
             redirect.addFlashAttribute("success", "Topic updated successfully!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());

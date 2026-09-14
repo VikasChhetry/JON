@@ -1,0 +1,426 @@
+==================================================
+PROJECT_MASTER_DOCUMENTATION
+Project Approval System (PAS)
+==================================================
+
+==================================================
+1. PROJECT OVERVIEW
+==================================================
+Project Name: Project Approval System (PAS)
+Project Purpose: To streamline, manage, and digitize the academic project submission and approval lifecycle for university students, faculty guides, and Heads of Department (HODs).
+Problem Statement: Manual tracking of student project proposals, team formations, file submissions, and faculty approvals is error-prone, opaque, and difficult to manage at scale.
+Why Needed: Ensures structured evaluation, branch-based isolation, historical tracking of reviews, and enforcement of strict rules (e.g., team sizes, stage-dependent submissions).
+Main Users: STUDENT (propose, work, submit), FACULTY (guide, review, approve), HOD (oversee, second-tier review, manage topics), ADMIN (manage users, CSVs).
+Main Features: Two-stage approval workflow (Proposal -> Final), automatic/manual guide assignment, strict topic management, robust team building with capacity enforcement, branch isolating queries, file uploads, role-based dashboards.
+What makes this advanced: True two-stage state machine (Stage 1/Stage 2), scheduled automatic capacity-aware assignments, granular role & branch constraints in backend queries rather than just UI filtering, dynamic team size constraint processing.
+Main Business Rules: Branch isolation (students only interact with faculty/topics of their branch); One guide per student; Teams must follow min/max capacities defined in Topic; Stage 1 must be approved before Stage 2 can begin.
+
+30-second: PAS is a Spring Boot application that orchestrates the university project lifecycle. Students form teams, pick topics, submit proposals, get faculty approval, and upload final reports, governed by strict state-based logic.
+1-minute: The PAS platform uses Spring Security and role-based access to manage the lifecycle of academic projects. It features an automated guide assignment system, branch-isolated topic management, and a robust two-stage state machine ensuring students pass a proposal phase before final submission. It tracks history for every rejection/approval.
+2-minute: Built with Spring Boot, Spring Data JPA, and Thymeleaf, PAS centralizes project approvals. HODs create topics and guide selection windows. Students form teams based on topic capacity rules, select a guide, and submit a 9-field proposal (Stage 1) plus PPT. Faculty guides review, approve/reject with tracked history. Upon proposal approval, students are unlocked to build their project. Finally, they submit a report, source code, and video for Stage 2 approval by Faculty, then HOD.
+5-minute technical: PAS is a monolithic MVC Java 21 Spring Boot app. The database relies on MySQL operated via Hibernate. Security is configured via `SecurityFilterChain` providing formLogin, CSRF, and role-based URL endpoints. Entities such as `Project`, `User`, `ProjectTopic`, and `ProjectTeamMember` are strictly joined with one-to-many and many-to-one constraints. The `ProjectService` enforces idempotency (e.g., preventing a student from joining multiple active projects) and state rules (a `STUDENT_WORKING` status prevents re-editing the proposal). Branch constraints are injected into JPA derived queries (e.g., `findByBranchAndRole`). Scheduled `@Transactional` tasks automatically allocate remaining student capacities to faculty when selection deadlines hit. 
+
+==================================================
+2. TECHNOLOGY STACK
+==================================================
+- Java 21: Core language (used for modern features).
+- Spring Boot 3.x: Rapid application framework (used for autoconfiguration, embedded Tomcat).
+- Maven: Build tool/dependency management (configured in `pom.xml`).
+- Spring MVC: Web framework (handles HTTP requests via Controllers).
+- Spring Security: Authentication/Authorization (manages roles, login, password encoding).
+- Spring Data JPA: Database abstraction (repositories for entities).
+- Hibernate: ORM implementation (translates JPA to MySQL).
+- MySQL: Relational database (persistent data storage).
+- Thymeleaf: Server-side template engine (renders dynamic HTML views).
+- Bootstrap 5 / CSS / JavaScript: Frontend UI styling and client-side interactions.
+- File Handling: `java.nio` (saving uploaded project PPTs, reports to local disk).
+- JavaMailSender: Email handling (sending real SMTP password reset emails).
+- CSV Processing: OpenCSV / custom split logic (bulk user/topic uploads).
+
+==================================================
+3. COMPLETE PROJECT STRUCTURE
+==================================================
+Packages:
+- `com.project.pas.controller`: HTTP endpoints mapping (e.g., `StudentController`, `AuthController`).
+- `com.project.pas.model`: JPA Entities & Enums (e.g., `Project`, `User`, `Role`, `ProjectStatus`).
+- `com.project.pas.repository`: Spring Data interfaces (e.g., `ProjectRepository`).
+- `com.project.pas.service`: Core business logic (e.g., `ProjectService`, `EmailService`).
+- `com.project.pas.config`: Security & MVC configuration (e.g., `SecurityConfig`).
+- `com.project.pas.exception`: Custom exceptions.
+- `src/main/resources/templates`: Thymeleaf HTML files organized by role (`/student`, `/faculty`, etc).
+- `src/main/resources/application.properties`: DB and Mail configuration.
+
+Important Class Example: `ProjectService`
+- Purpose: Orchestrates project state transitions, team validation, and assignment.
+- Fields: `ProjectRepository`, `ApprovalHistoryRepository`, `ProjectTeamMemberRepository`.
+- Methods: `submitProposal()`, `startWorking()`, `autoAssignGuides()`.
+- What calls it: Controllers.
+- What it calls: Repositories to fetch/save data.
+
+Architecture Diagram:
+Browser 
+ ↓ (HTTP POST /student/project/1/proposal)
+Controller (StudentController.submitProposal)
+ ↓ (Calls projectService.submitProposal)
+Service (ProjectService) - Enforces min/max team size, sets status PROPOSAL_PENDING_FACULTY
+ ↓ (Calls repository.save)
+Repository (ProjectRepository)
+ ↓ (Translates to SQL)
+JPA/Hibernate
+ ↓ 
+MySQL
+
+==================================================
+4. MVC ARCHITECTURE
+==================================================
+Model: Entities in `com.project.pas.model` representing DB tables (User, Project).
+View: Thymeleaf templates in `src/main/resources/templates` rendering UI dynamically based on the Model.
+Controller: Classes annotated with `@Controller` that intercept browser requests, call Services, populate Models, and return View names.
+
+Example Flows:
+1) Student Views Dashboard
+Browser -> GET `/student/dashboard` -> `StudentController.dashboard()` -> `ProjectService.getActiveProject()` -> `ProjectRepository` -> DB -> Returns "student/dashboard" view string.
+
+2) Student Submits Proposal
+Browser -> POST `/student/project/{id}/proposal` -> `StudentController.submitProposal()` -> `ProjectService.submitProposal()` -> Validates Team Size & Branch -> Updates `ProjectStatus` -> Saves to `ProjectRepository` -> Redirects to `/student/project/{id}`.
+
+==================================================
+5. DATABASE
+==================================================
+Entity: `User` (Table: `users`)
+- PK: `id` (Long, Identity)
+- Fields: `email` (Unique), `password`, `fullName`, `erpId`, `rollNumber`.
+- Enum: `Role` (STUDENT, FACULTY, HOD, ADMIN).
+- Relations: `@ManyToOne Branch branch`
+
+Entity: `ProjectTopic` (Table: `project_topics`)
+- PK: `id` (Long)
+- Fields: `title`, `description`, `minTeamSize`, `maxTeamSize`, `status`.
+- Relations: `@ManyToOne Branch branch`, `@ManyToOne User createdBy`.
+
+Entity: `Project` (Table: `projects`)
+- PK: `id`
+- Fields: `title`, `synopsis`, `reportFilePath`, `status` (Enum), `rejectedAtStage` (Enum).
+- Relations: `@ManyToOne User student` (Owner), `@ManyToOne User facultyGuide`, `@ManyToOne ProjectTopic topic`, `@OneToMany ProjectTeamMember teamMembers`.
+
+Entity: `ProjectTeamMember` (Table: `project_team_members`)
+- PK: `id`
+- Fields: `contributionRole`, `isOwner` (Boolean).
+- Relations: `@ManyToOne Project project`, `@ManyToOne User member`.
+- Constraint: Unique combination of (project_id, member_id).
+
+Entity: `ApprovalHistory` (Table: `approval_history`)
+- PK: `id`
+- Fields: `action`, `comments`, `rejectionReason`, `timestamp`, `previousStatus`, `newStatus`, `userRole`.
+- Relations: `@ManyToOne Project project`, `@ManyToOne User performedBy`.
+
+==================================================
+6. USER ROLES
+==================================================
+STUDENT: Can view topics, assemble teams, submit/edit proposals, upload final code. Cannot see other branch projects.
+FACULTY: Reviews proposals and final projects for students explicitly assigned to them. Creates topics. Cannot see other faculty's students.
+HOD: Final sign-off on projects (Stage 2). Creates guide selection windows. Creates topics. Sees all branch activity.
+ADMIN: Unrestricted branch. Uploads CSVs for user provisioning. Can delete projects and users bypassing normal lifecycle locks.
+
+==================================================
+7. AUTHENTICATION
+==================================================
+Implemented via Spring Security.
+- `SecurityConfig` creates a `SecurityFilterChain`.
+- Login intercepts `/login` (Spring default or custom), utilizing `CustomUserDetailsService` which implements `UserDetailsService`.
+- Retrieves `User` via `UserRepository.findByEmail()`.
+- Maps `Role` to Spring `GrantedAuthority` (e.g., `ROLE_STUDENT`).
+- Validates hashed password via `BCryptPasswordEncoder`.
+- Session handles state across requests.
+- Logged-in user is accessed via `@AuthenticationPrincipal` or `SecurityContextHolder`.
+
+==================================================
+8. SECURITY
+==================================================
+- URL Auth: `requestMatchers("/student/**").hasRole("STUDENT")` strictly isolates endpoints.
+- Backend Auth: Identifiers passed in URLs (e.g., `/project/{id}`) are verified in the Service/Controller (`project.getStudent().getId().equals(currentUser.getId())`). Prevents IDOR (Insecure Direct Object Reference).
+- Password Hashing: BCrypt.
+- CSRF: Enabled globally across POST requests by Spring Security.
+- Vulnerability handled: If a student tries to add a team member from another branch, `ProjectService` validates branch match, preventing cross-branch unauthorized injections.
+
+==================================================
+9. BRANCH ISOLATION
+==================================================
+Implemented fundamentally at the DB query level.
+- `ProjectTopicRepository.findByBranchAndStatus(user.getBranch(), Status)`
+- HODs and Faculty inherently inject `currentUser.getBranch()` into queries so they can never pull data for other branches.
+- Branch isolation is highly secure because it happens in the Service and Repository, NOT just by hiding HTML elements in Thymeleaf.
+
+==================================================
+10. FACULTY GUIDE SELECTION
+==================================================
+1. HOD creates a `GuideSelectionForm` with start/end time.
+2. During the window, students open `/student/guide-selection`.
+3. System fetches faculty capacity: `vacancies = maxCapacity - assignedStudentsCount`.
+4. Student selects a Faculty. `GuideAssignment` entity is saved, linking Student to Faculty.
+5. If the Faculty hits max capacity, they disappear from dropdowns.
+6. HOD can manually forcibly reassign students if conflict arises.
+
+==================================================
+11. AUTOMATIC GUIDE ASSIGNMENT
+==================================================
+- Triggered automatically via a scheduled cron job (or checked programmatically) when `endDateTime` is reached.
+- Logic: `GuideSelectionService.autoAssignAll()`.
+- Finds all students in the branch with NO `GuideAssignment`.
+- Finds all Faculty in the branch representing vacancies > 0.
+- Iterates students and assigns them to Faculty in a Round-Robin style to distribute load.
+- Prevents over-allocation by decrementing available seat counters precisely.
+- Runs inside `@Transactional` ensuring if DB fails, no partial bad assignments persist.
+
+==================================================
+12. PROJECT TOPICS
+==================================================
+- Faculty/HOD creates topic manually or via CSV.
+- Status begins as `AVAILABLE`.
+- Students browse `AVAILABLE` topics.
+- When Student selects a topic, `ProjectService` assigns it to their active project and changes topic status to `ASSIGNED`.
+- If the project is deleted or rejected utterly, the topic reverts to `AVAILABLE`.
+- Topic holds `minTeamSize` and `maxTeamSize` as the absolute rule for that specific project.
+
+==================================================
+13. PROJECT CREATION
+==================================================
+A. Own Idea: Student fills a form proposing a brand new idea. System uses global fallback variables (min 1, max 4) for team size.
+B. Available Topic: Student clicks "Select Topic". The DB links the `ProjectTopic` ID. The system strictly pulls `minTeamSize` and `maxTeamSize` limits from this topic entity going forward.
+
+==================================================
+14. PROJECT PROPOSAL — STAGE 1
+==================================================
+Mandatory Fields (DB Fields): `synopsis`, `problemStatement`, `objectives`, `methodology`, `systemDesign`.
+Optional (DB Fields): `literatureReview`, `futureWork`.
+File: `pptFilePath` (Mandatory for Stage 1, saved in `/proposals/{id}`).
+Constraints: Students cannot edit `Title`, `Category`, `TechStack` (locked upon creation) during resubmissions. Only the dynamic proposal docs can be patched.
+Team Validation: `submitProposal()` strictly counts the `teamMembers` array and blocks submission if lower than `minTeamSize` or higher than `maxTeamSize`.
+
+==================================================
+15. FINAL PROJECT — STAGE 2
+==================================================
+- Unlocked ONLY when `ProjectStatus == STUDENT_WORKING`.
+- Triggers when student clicks "Start Working" post Faculty Approval of Stage 1.
+- Required Files: Final Report PDF, Source Code ZIP.
+- Required Links: GitHub URL.
+- Optional: Video Demo URL.
+- Post-Submission: Status moves to `PENDING_FINAL_REVIEW` for Faculty, then `PENDING_HOD_APPROVAL`.
+
+==================================================
+16. TEAM MEMBERS
+==================================================
+- Project Owner (the student clicking 'submit') is auto-injected as `isOwner = true`.
+- Cannot be deleted by anyone.
+- Available student list securely filters: `branch == owner.branch && activeProject == null`.
+- Avoids duplicated accounts; `ProjectTeamMember` associates directly to existing `User` entity records.
+- Adds `contributionRole` strictly tracking what each member is tasked with (e.g., 'Backend Design').
+
+==================================================
+17. PROJECT APPROVAL WORKFLOW
+==================================================
+(State Machine ENUMS: `ProjectStatus`)
+1. `PROPOSAL_PENDING_FACULTY` -> Created by Student, Visible to Faculty.
+2. `FACULTY_REJECTED` -> Pushed back. Unlocks `editProposal` for Student.
+3. `STUDENT_WORKING` -> Approved by Faculty. Student can now "Start Work" and upload files.
+4. `PENDING_FINAL_REVIEW` -> Submitted files. Faculty checks codebase.
+5. `PENDING_HOD_APPROVAL` -> Faculty passed it. HOD's dashboard.
+6. `COMPLETED` -> HOD approved. Fully locked.
+
+==================================================
+18. APPROVAL HISTORY
+==================================================
+- `ApprovalHistory` entity.
+- Created heavily in `ProjectService.recordHistory()`.
+- Captures: timestamp, who performed it, Action string ("Approved Proposal"), status changes (from, to), optional comments, and strict rejection reasons.
+- Highly visible to the student to know exactly why they were rejected.
+
+==================================================
+19. FACULTY REVIEW
+==================================================
+- `FacultyController.reviewProject()`
+- Logic rigidly enforces `project.getFacultyGuide().getId().equals(currentUser.getId())`.
+- If Faculty Guide X tries to approve Faculty Guide Y's student via direct URL POST crafting, the backend throws "Access Denied".
+- Faculty inputs are logged tightly into History.
+
+==================================================
+20. HOD REVIEW
+==================================================
+- HOD validates overall branch quality strictly over `PENDING_HOD_APPROVAL` state.
+- HOD can reject (sending it back to `STUDENT_RESUBMISSION` mapping to fix final files) or Approve.
+- HOD queries map solely via `user.getBranch()`.
+
+==================================================
+21. ADMIN
+==================================================
+- No branch constraints.
+- Admin manages system health, can wipe broken users/projects.
+- Uploads the core Student/Faculty CSV lists.
+
+==================================================
+22. BULK USER CSV UPLOAD
+==================================================
+- `AdminController.uploadUsers()`
+- Opens `MultipartFile`. Skips header. Expects: `fullName,email,role,branch,password`.
+- Service maps string `branch` to actual `Branch` DB entity lookup.
+- Hashes `password` row via `PasswordEncoder.encode()`.
+- Validates `email` uniqueness. Skips invalid rows silently/reports error counts.
+
+==================================================
+23. FILE UPLOAD SYSTEM
+==================================================
+- Handled primarily by `FileStorageService.storeFile()`.
+- Files natively saved relative to project ID (e.g. `uploads/proposals/4/presentation.pptx`).
+- Download endpoint maps standard HTTP Resource handlers, checking Authorization before returning InputStream.
+- Missing files trigger `FileNotFoundException`.
+
+==================================================
+24. FORGOT PASSWORD
+==================================================
+- `ForgotPasswordService`
+- Generates secure UUID token -> Saves to `PasswordResetToken` linked to `User`.
+- Emails out unique link using `JavaMailSender` configured via environment variables. (Fully IMPLEMENTED, Real Gmail SMTP execution).
+- Token is verified upon link click (Expiration typically 24hrs).
+
+==================================================
+25. CONTROLLERS
+==================================================
+- `AuthController`: Handles login, forgot password flows.
+- `StudentController`/`FacultyController`/`HodController`/`AdminController`: Isolates role endpoints structurally based on `/student`, `/faculty`, etc prefixes.
+- Request -> Controller (checks auth basics) -> Service (business rules & DB) -> Response.
+
+==================================================
+26. SERVICES
+==================================================
+- `ProjectService`: Heart of the application (State switching, team management, IDOR checks).
+- `GuideSelectionService`: Math heavy tracking logic for capacity algorithm matching.
+- `ProjectTopicService`: CRUD for pre-approved ideas.
+- `FileStorageService`: Disk I/O mappings.
+
+==================================================
+27. REPOSITORIES
+==================================================
+- `ProjectRepository`
+  - `List<Project> findByFacultyGuide(User)`
+  - `List<Project> findByStudent_BranchAndStatus(...)` - Important JPQL abstraction joining student relation to check branch isolated statuses.
+- `ProjectTeamMemberRepository`
+  - `List<ProjectTeamMember> findByProject(Project)`
+
+==================================================
+28. IMPORTANT CODE
+==================================================
+- `ProjectService.submitProposal()`: Validates Team size array count against dynamically fetched limits. Protects invalid forward state propagation.
+- `GuideSelectionService.autoAssignAll()`: Critical algorithm iterating remaining students mapping sequentially against available loaded array capacities.
+
+==================================================
+29. COMPLETE REQUEST FLOWS
+==================================================
+Flow 3: Student Proposes Own Project
+Browser -> POST `/student/project/custom` -> `StudentController` -> `ProjectService.createCustomProject()` -> `Project` entity instantiated (no topic mapped) -> DB Insert -> Redirects to Dashboard.
+
+Flow 7: Student Resubmits
+Browser -> POST `/student/project/{id}/edit` -> `StudentController.editAndResubmit()` -> `ProjectService.editProposal()` (Validates team sizes again! Ignores core updates like Title) -> Saves -> History logged -> Redirects.
+
+==================================================
+30. DATABASE CONSTRAINTS
+==================================================
+- Unique (email): Strictly prevents duplicated users.
+- Unique (project_id, member_id): Prevents a student accidentally submitting the same team member twice bypassing constraints.
+- Foreign Key (`faculty_guide_id` -> `users.id`): Enforces referential integrity.
+
+==================================================
+31. TRANSACTIONS
+==================================================
+- `@Transactional` massively used in `ProjectService`.
+- If `projectRepository.save()` succeeds but `approvalHistoryRepository.save()` fails due to DB outage, the entire save rolls back!
+- Ensures we never end up with an un-historied project state switch.
+
+==================================================
+32. VALIDATION
+==================================================
+- Frontend: HTML `required`, `min`, `max` tags (prevent basic typing mistakes).
+- Backend (Crucial): Controllers utilizing programmatic checks inside Services (`if (count > maxTeamSize) throw IllegalStateException()`) preventing POST tampering in Postman/Curl.
+
+==================================================
+33. ERROR HANDLING
+==================================================
+- Business logic exceptions are explicitly thrown in Service as `IllegalStateException` or `IllegalArgumentException`. 
+- Caught smoothly in the generic Try/Catch block in Controllers and fed to `RedirectAttributes.addFlashAttribute("error", e.getMessage())` producing a clean visible Red notification on the UI instead of a stack trace.
+
+==================================================
+34. SECURITY AUDIT
+==================================================
+PROBLEM: Missing robust rate limiting.
+RISK: A malicious user could brute force the password reset endpoint to spam users.
+RECOMMENDED FIX: Implement `Bucket4j` or Spring Web filtering for `/forgot-password`.
+
+==================================================
+35. CODE QUALITY AUDIT
+==================================================
+- EAGER fetching potentially exists in `User` -> `Branch` relationships, which could cause N+1 queries if lists of users are fetched blindly. Recommending switching to `LAZY` or using explicit `@EntityGraph`. No duplicated logic detected around state switching due to robust Service abstraction.
+
+==================================================
+36. KNOWN BUGS / LIMITATIONS
+==================================================
+- Limitation: HOD cannot revert a project back to Stage 1 strictly after approving Stage 2. (Once COMPLETED, it is completely immutable).
+- Suggested Solution: Add an `UN_COMPLETE` rollback mechanism for Admins specifically.
+
+==================================================
+37. INTERVIEW QUESTIONS (Sample Condensed)
+==================================================
+Q: How does PAS prevent unauthorized access to projects?
+A: Backend ID checks. (Detailed: In `ProjectService`, methods like `validateOwner(project, student)` verify that the authenticated principal's ID explicitly matches the `project.getStudent().getId()`).
+
+Q: How did you implement branching rules?
+A: JPQL standard derived queries mapping `findByBranch`. E.g., `findByBranchAndRole`. It queries off the mapped relationship, completely isolating subsets.
+
+Q: Explain Team Size integrity.
+A: The DB holds configurations in `ProjectTopic`. The logic in `submitProposal` verifies total records spanning `ProjectTeamMemberRepository.countByProject` falls mathematically between `topic.minTeamSize` and `topic.maxTeamSize` just before saving.
+
+==================================================
+38. "WHY DID YOU DO THIS?"
+==================================================
+Why separate Stage 1 and Stage 2?: To protect faculty time. Reviewing a 5,000 line codebase for a project idea that is terrible is a massive waste. Proposals act as a low-cost filter.
+Why validate on backend?: Because frontend HTML constraints can easily be bypassed by manipulating the DOM or using Postman to POST directly to the server. Backend is the only inviolable source of truth.
+
+==================================================
+39. SCENARIO QUESTIONS
+==================================================
+What happens if Auto-assignment runs twice?
+Because the `autoAssignAll` specifically queries for students with `NO GuideAssignment`, running it again yields 0 students needing assignments and safely exits idempotently. No duplicate guides are created.
+
+What happens if Faculty rejects a proposal?
+The status updates to `FACULTY_REJECTED`. The UI unlocks the `/edit` mapping allowing the student to revise their proposal files, fix their team members, and resubmit, effectively rolling the state back to `PROPOSAL_PENDING_FACULTY`.
+
+==================================================
+40-43. JAVA, SPRING, DB CONCEPTS IN PAS
+==================================================
+- Java `Optional`: Extensively utilized via `findById()` to seamlessly avoid NullPointerExceptions, handled via `.orElseThrow()`.
+- Spring `@Transactional`: Isolates operations.
+- JPA `@OneToMany`: `Project` maps to `List<ProjectTeamMember>`.
+- MySQL Normalization: The relationships eliminate data duplication. Updating a Student's `erpId` updates it system-wide without cascading redundant table updates.
+
+==================================================
+44-46. ARCHITECTURE, SCALA, IMPROVEMENTS
+==================================================
+Design Decision: Using Server-side rendering (Thymeleaf) over React.
+Why: Allowed rapid iteration of logic intimately tied to Spring Security context avoiding complex JWT API designs for an intrinsically simple multi-role application.
+Scalability: At 10,000 users, finding Unassigned users might become a slow table scan. Adding Indexes on `status` and `branch_id` would massively speed up analytical queries. Bulk file storage should migrate to AWS S3 instead of local disk I/O.
+
+==================================================
+47. CHEAT SHEET
+==================================================
+- Architecture: Spring MVC Monolith. 
+- State Machine: Pending -> Selected -> Proposal Pending -> Working -> Final Pending -> Completed.
+- Business Logic: Project Service ensures integrity, Guide Selection handles algorithms. 
+- Branches: Physical boundaries in query mappings.
+
+==================================================
+48. FINAL CHECKLIST
+==================================================
+[x] I understand how Team Members are constrained by DB logic.
+[x] I can explain Spring Security Roles.
+[x] I comprehend the `@Transactional` auto-assignment logic.
+[x] I understand State Machine architectures in MVC.
+==================================================
+End of Document

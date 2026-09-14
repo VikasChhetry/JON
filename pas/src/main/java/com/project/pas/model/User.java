@@ -44,6 +44,14 @@ public class User {
 
     private int maxGuidingCapacity = 0; // Only meaningful for FACULTY role
 
+    @Size(max = 50)
+    @Column(unique = true)
+    private String erpId;
+
+    @Size(max = 50)
+    @Column(unique = true)
+    private String rollNumber;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -135,5 +143,21 @@ public class User {
 
     public void setMaxGuidingCapacity(int maxGuidingCapacity) {
         this.maxGuidingCapacity = maxGuidingCapacity;
+    }
+
+    public String getErpId() {
+        return erpId;
+    }
+
+    public void setErpId(String erpId) {
+        this.erpId = erpId;
+    }
+
+    public String getRollNumber() {
+        return rollNumber;
+    }
+
+    public void setRollNumber(String rollNumber) {
+        this.rollNumber = rollNumber;
     }
 }

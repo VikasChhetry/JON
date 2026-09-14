@@ -58,6 +58,18 @@
                                 </div>
                             </div>
 
+                            <div class="row mb-4">
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label text-primary">Min Team Size</label>
+                                    <input type="number" name="minTeamSize" class="form-control" min="1" max="10"
+                                        required th:value="${isEdit != null and isEdit} ? ${topic.minTeamSize} : '1'">
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label class="form-label text-primary">Max Team Size</label>
+                                    <input type="number" name="maxTeamSize" class="form-control" min="1" max="10"
+                                        required th:value="${isEdit != null and isEdit} ? ${topic.maxTeamSize} : '4'">
+                                </div>
+                            </div>
                             <button type="submit" class="btn btn-primary w-100"
                                 th:text="${isEdit != null and isEdit} ? 'Update Topic' : 'Create Topic'">Create
                                 Topic</button>

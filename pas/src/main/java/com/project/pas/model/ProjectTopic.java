@@ -44,6 +44,20 @@ public class ProjectTopic {
     @Column(nullable = false)
     private TopicStatus status = TopicStatus.AVAILABLE;
 
+    /**
+     * Minimum team size (including the project owner).
+     * Default 1 means solo projects are allowed.
+     */
+    @Column(nullable = false)
+    private int minTeamSize = 1;
+
+    /**
+     * Maximum team size (including the project owner).
+     * Default 4.
+     */
+    @Column(nullable = false)
+    private int maxTeamSize = 4;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -127,5 +141,21 @@ public class ProjectTopic {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public int getMinTeamSize() {
+        return minTeamSize;
+    }
+
+    public void setMinTeamSize(int minTeamSize) {
+        this.minTeamSize = minTeamSize;
+    }
+
+    public int getMaxTeamSize() {
+        return maxTeamSize;
+    }
+
+    public void setMaxTeamSize(int maxTeamSize) {
+        this.maxTeamSize = maxTeamSize;
     }
 }

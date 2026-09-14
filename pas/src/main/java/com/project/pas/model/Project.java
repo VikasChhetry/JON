@@ -111,6 +111,10 @@ public class Project {
     @OrderBy("timestamp DESC")
     private List<ApprovalHistory> approvalHistory = new ArrayList<>();
 
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    @OrderBy("isOwner DESC, addedAt ASC")
+    private List<ProjectTeamMember> teamMembers = new ArrayList<>();
+
     public Project() {
     }
 
@@ -261,6 +265,14 @@ public class Project {
 
     public void setApprovalHistory(List<ApprovalHistory> approvalHistory) {
         this.approvalHistory = approvalHistory;
+    }
+
+    public List<ProjectTeamMember> getTeamMembers() {
+        return teamMembers;
+    }
+
+    public void setTeamMembers(List<ProjectTeamMember> teamMembers) {
+        this.teamMembers = teamMembers;
     }
 
     // ========== Stage 1: Proposal Getters/Setters ==========

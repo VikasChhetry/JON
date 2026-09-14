@@ -49,6 +49,63 @@
                     </div>
                 </div>
 
+                <!-- Team Members Section -->
+                <div class="content-card mb-4 border-primary border-opacity-50">
+                    <div class="card-header bg-dark border-bottom border-primary border-opacity-25 py-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-users text-primary fs-4"></i>
+                            <h3 class="mb-0 text-primary">Team Members</h3>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-dark mb-0 table-borderless">
+                                <thead style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                    <tr>
+                                        <th class="ps-4">Full Name</th>
+                                        <th>Email</th>
+                                        <th>ERP ID</th>
+                                        <th>Roll Number</th>
+                                        <th>Contribution/Role</th>
+                                        <th>Team Role</th>
+                                        <th>Branch</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="member : ${teamMembers}"
+                                        style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                        <td class="ps-4 fw-bold" th:text="${member.member.fullName}">Name</td>
+                                        <td th:text="${member.member.email}">Email</td>
+                                        <td
+                                            th:text="${member.member.erpId != null && !member.member.erpId.isEmpty() ? member.member.erpId : 'N/A'}">
+                                            ERP</td>
+                                        <td
+                                            th:text="${member.member.rollNumber != null && !member.member.rollNumber.isEmpty() ? member.member.rollNumber : 'N/A'}">
+                                            Roll No</td>
+                                        <td><span class="badge bg-secondary text-light fw-normal"
+                                                th:text="${member.contributionRole}">Role</span></td>
+                                        <td>
+                                            <span th:if="${member.owner}" class="badge bg-primary"><i
+                                                    class="fas fa-crown me-1"></i> Team Leader</span>
+                                            <span th:unless="${member.owner}" class="badge bg-info text-dark"><i
+                                                    class="fas fa-user me-1"></i> Team Member</span>
+                                        </td>
+                                        <td
+                                            th:text="${member.member.branch != null ? member.member.branch.name : 'N/A'}">
+                                            Branch</td>
+                                    </tr>
+                                    <tr th:if="${#lists.isEmpty(teamMembers)}">
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="fas fa-info-circle mb-2 fs-5 opacity-50 block"></i><br>
+                                            No additional team members added.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Final HOD Review Panel -->
                 <div th:if="${project.status.name() == 'PENDING_HOD_REVIEW'}"
                     class="review-panel border-primary border-opacity-50">
@@ -71,6 +128,22 @@
                             <div class="fw-bold fs-6 mb-2 text-light"><i
                                     class="fas fa-file-archive text-warning me-2"></i> Source</div>
                             <span class="badge bg-success"><i class="fas fa-download me-1"></i> Download</span>
+                        </a>
+                        <a th:if="${project.githubUrl != null && !project.githubUrl.isEmpty()}"
+                            th:href="${project.githubUrl}" target="_blank"
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
+                            <div class="fw-bold fs-6 mb-2 text-light"><i class="fab fa-github text-light me-2"></i>
+                                GitHub</div>
+                            <span class="badge bg-info"><i class="fas fa-external-link-alt me-1"></i> Open Link</span>
+                        </a>
+                        <a th:if="${project.videoUrl != null && !project.videoUrl.isEmpty()}"
+                            th:href="${project.videoUrl}" target="_blank"
+                            class="p-3 bg-dark rounded border border-secondary border-opacity-50 flex-fill text-decoration-none"
+                            style="min-width: 200px;">
+                            <div class="fw-bold fs-6 mb-2 text-light"><i class="fas fa-video text-danger me-2"></i>
+                                Video</div>
+                            <span class="badge bg-info"><i class="fas fa-external-link-alt me-1"></i> Open Link</span>
                         </a>
                     </div>
 

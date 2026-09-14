@@ -45,14 +45,21 @@ public class ProjectTopicService {
      * Branch enforcement: creator's branch must match the topic's branch.
      */
     public ProjectTopic createTopic(String title, String description, String category,
-            String techStack, User creator) {
+            String techStack, int minTeamSize, int maxTeamSize, User creator) {
         validateBranchAccess(creator);
+
+        if (minTeamSize < 1)
+            minTeamSize = 1;
+        if (maxTeamSize < minTeamSize)
+            maxTeamSize = minTeamSize;
 
         ProjectTopic topic = new ProjectTopic();
         topic.setTitle(title);
         topic.setDescription(description);
         topic.setCategory(category);
         topic.setTechStack(techStack);
+        topic.setMinTeamSize(minTeamSize);
+        topic.setMaxTeamSize(maxTeamSize);
         topic.setBranch(creator.getBranch());
         topic.setCreatedBy(creator);
         topic.setStatus(TopicStatus.AVAILABLE);
@@ -86,6 +93,8 @@ public class ProjectTopicService {
             topic.setDescription(parts[1].trim());
             topic.setCategory(parts.length > 2 ? parts[2].trim() : "");
             topic.setTechStack(parts.length > 3 ? parts[3].trim() : "");
+            topic.setMinTeamSize(1);
+            topic.setMaxTeamSize(4);
             topic.setBranch(creator.getBranch());
             topic.setCreatedBy(creator);
             topic.setStatus(TopicStatus.AVAILABLE);
@@ -165,7 +174,7 @@ public class ProjectTopicService {
      * Editing is ONLY allowed when status is AVAILABLE.
      */
     public ProjectTopic updateTopic(Long id, String title, String description,
-            String category, String techStack, User user) {
+            String category, String techStack, int minTeamSize, int maxTeamSize, User user) {
         validateBranchAccess(user);
 
         ProjectTopic topic = topicRepository.findById(id)
@@ -178,10 +187,17 @@ public class ProjectTopicService {
                             "'. Only topics with 'Available' status can be edited.");
         }
 
+        if (minTeamSize < 1)
+            minTeamSize = 1;
+        if (maxTeamSize < minTeamSize)
+            maxTeamSize = minTeamSize;
+
         topic.setTitle(title);
         topic.setDescription(description);
         topic.setCategory(category);
         topic.setTechStack(techStack);
+        topic.setMinTeamSize(minTeamSize);
+        topic.setMaxTeamSize(maxTeamSize);
         return topicRepository.save(topic);
     }
 
