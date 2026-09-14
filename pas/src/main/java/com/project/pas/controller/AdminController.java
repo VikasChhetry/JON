@@ -104,11 +104,12 @@ public class AdminController {
     }
 
     @PostMapping("/users/upload")
-    public String uploadUsers(@RequestParam("file") org.springframework.web.multipart.MultipartFile file, RedirectAttributes redirect) {
+    public String uploadUsers(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            RedirectAttributes redirect) {
         try {
             UserService.BulkUserUploadResult result = userService.uploadUsersFromCsv(file);
             redirect.addFlashAttribute("bulkResult", result);
-            redirect.addFlashAttribute("success", "Bulk upload completed. Processed: " + result.getTotalProcessed() + 
+            redirect.addFlashAttribute("success", "Bulk upload completed. Processed: " + result.getTotalProcessed() +
                     ", Success: " + result.getSuccessCount() + ", Failed: " + result.getFailedCount());
         } catch (Exception e) {
             redirect.addFlashAttribute("error", "Upload failed: " + e.getMessage());
@@ -121,10 +122,12 @@ public class AdminController {
         response.setContentType("text/csv");
         response.setHeader("Content-Disposition", "attachment; filename=\"user_upload_template.csv\"");
         java.io.PrintWriter writer = response.getWriter();
-        writer.println("fullName,email,role,branch,password");
-        writer.println("John Doe,john@example.com,STUDENT,CS,password123");
-        writer.println("Jane Smith,jane@example.com,FACULTY,IT,password123");
-        writer.println("Admin User,admin2@example.com,ADMIN,,password123");
+        writer.println("fullName,email,erpId,rollNumber,role,branch,password");
+        writer.println("Student One,student1cs@niet.co.in,0231cs013,2301330120117,STUDENT,CS,Niet@123");
+        writer.println("Student Two,student2cs@niet.co.in,0231cs014,2301330120118,STUDENT,CS,Niet@123");
+        writer.println("Faculty CS,facultycs@niet.co.in,facultycs001,CSFAC001,FACULTY,CS,Niet@123");
+        writer.println("HOD CS,hodcs@niet.co.in,hodcs001,CSHOD001,HOD,CS,Niet@123");
+        writer.println("Admin User,admin@pas.com,,,ADMIN,,Niet@123");
         writer.flush();
     }
 
@@ -132,6 +135,8 @@ public class AdminController {
     public String createUser(@RequestParam String fullName, @RequestParam String email,
             @RequestParam String password, @RequestParam Role role,
             @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) String erpId,
+            @RequestParam(required = false) String rollNumber,
             RedirectAttributes redirect) {
         try {
             Branch branch = null;
@@ -139,7 +144,7 @@ public class AdminController {
                 branch = branchService.getBranchById(branchId)
                         .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
             }
-            userService.createUser(fullName, email, password, role, branch);
+            userService.createUser(fullName, email, password, role, branch, erpId, rollNumber);
             redirect.addFlashAttribute("success", "User created successfully");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());
@@ -162,6 +167,8 @@ public class AdminController {
     public String updateUser(@PathVariable Long id, @RequestParam String fullName,
             @RequestParam String email, @RequestParam Role role,
             @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) String erpId,
+            @RequestParam(required = false) String rollNumber,
             RedirectAttributes redirect) {
         try {
             Branch branch = null;
@@ -169,7 +176,7 @@ public class AdminController {
                 branch = branchService.getBranchById(branchId)
                         .orElseThrow(() -> new IllegalArgumentException("Branch not found"));
             }
-            userService.updateUser(id, fullName, email, role, branch);
+            userService.updateUser(id, fullName, email, role, branch, erpId, rollNumber);
             redirect.addFlashAttribute("success", "User updated successfully");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());

@@ -60,8 +60,10 @@
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
+                            <th>Full Name</th>
                             <th>Email</th>
+                            <th>ERP ID</th>
+                            <th>Roll Number</th>
                             <th>Role</th>
                             <th>Branch</th>
                             <th>Status</th>
@@ -72,6 +74,10 @@
                         <tr th:each="user : ${users}">
                             <td class="fw-bold" th:text="${user.fullName}">Name</td>
                             <td th:text="${user.email}">Email</td>
+                            <td th:text="${user.erpId != null && !user.erpId.isEmpty() ? user.erpId : '-'}">ERP</td>
+                            <td
+                                th:text="${user.rollNumber != null && !user.rollNumber.isEmpty() ? user.rollNumber : '-'}">
+                                Roll</td>
                             <td>
                                 <span class="badge" th:classappend="${user.role.name() == 'ADMIN' ? 'bg-danger' : 
                                                       (user.role.name() == 'STUDENT' ? 'bg-info' : 
@@ -107,7 +113,7 @@
                             </td>
                         </tr>
                         <tr th:if="${#lists.isEmpty(users)}">
-                            <td colspan="6" class="text-center py-4 text-muted">
+                            <td colspan="8" class="text-center py-4 text-muted">
                                 No users found.
                             </td>
                         </tr>

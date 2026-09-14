@@ -136,11 +136,16 @@
                             ROLE</div>
                     </div>
                 </div>
-                <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="btn-logout">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </form>
+                <div class="d-flex gap-2">
+                    <a th:href="@{/profile}" class="btn-logout" title="My Profile" style="flex: 1; text-align: center;">
+                        <i class="fas fa-id-card"></i>
+                    </a>
+                    <form th:action="@{/logout}" method="post" style="flex: 1;">
+                        <button type="submit" class="btn-logout" style="width: 100%;">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </button>
+                    </form>
+                </div>
             </div>
         </aside>
 
