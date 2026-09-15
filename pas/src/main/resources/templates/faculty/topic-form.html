@@ -90,8 +90,9 @@
 
                         <div class="bg-dark p-3 rounded border border-secondary border-opacity-25 mb-4">
                             <strong class="d-block mb-2 fs-6">Required CSV Format:</strong>
-                            <code class="text-light">title,description,category,techStack</code><br>
-                            <code class="text-light">"AI Bot","A chatbot","AI","Python"</code>
+                            <code
+                                class="text-light">title,description,category,techStack,Min Team Size,Max Team Size</code><br>
+                            <code class="text-light">"AI Bot","A chatbot","AI","Python",1,4</code>
                         </div>
 
                         <form th:action="@{/faculty/topics/upload}" method="post" enctype="multipart/form-data"

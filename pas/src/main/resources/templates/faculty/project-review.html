@@ -115,13 +115,53 @@
                     </div>
                     <p class="text-secondary mb-4">The student has proposed this custom idea. Approve it so they can
                         begin working, or reject it with a reason if it needs changes.</p>
+                    <h4 class="fs-5 mt-4 mb-3 border-bottom border-secondary border-opacity-25 pb-2">Team Size
+                        Requirements</h4>
+                    <div class="alert alert-secondary border-secondary mb-4">
+                        <div class="row text-center">
+                            <div class="col-md-3" th:if="${project.projectType.name() == 'CUSTOM'}">
+                                <span class="d-block text-muted small">Requested Team Size</span>
+                                <strong class="fs-4 fw-bold"
+                                    th:text="${project.requestedTeamSize != null ? project.requestedTeamSize : 'Not set'}">-</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="d-block text-muted small">Minimum Team Size</span>
+                                <strong class="fs-4 fw-bold text-info"
+                                    th:text="${project.minTeamSize != null ? project.minTeamSize : '-'}">-</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="d-block text-muted small">Maximum Team Size</span>
+                                <strong class="fs-4 fw-bold text-primary"
+                                    th:text="${project.maxTeamSize != null ? project.maxTeamSize : '-'}">-</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="d-block text-muted small">Current Team Size</span>
+                                <strong class="fs-4 fw-bold text-warning"
+                                    th:text="${#lists.size(teamMembers)}">-</strong>
+                            </div>
+                        </div>
+                    </div>
 
                     <div class="row">
                         <!-- Approve Form -->
                         <div class="col-md-6 mb-3">
                             <form th:id="'approve-form-' + ${project.id}"
                                 th:action="@{'/faculty/projects/' + ${project.id} + '/approve-idea'}" method="post">
-                                <div class="form-group">
+                                <div class="row">
+                                    <div class="col-md-6 form-group mb-2">
+                                        <label class="form-label text-success">Minimum Team Size *</label>
+                                        <input type="number" name="minTeamSize" class="form-control border-success"
+                                            th:value="${project.requestedTeamSize != null ? project.requestedTeamSize : 1}"
+                                            min="1" required>
+                                    </div>
+                                    <div class="col-md-6 form-group mb-2">
+                                        <label class="form-label text-success">Maximum Team Size *</label>
+                                        <input type="number" name="maxTeamSize" class="form-control border-success"
+                                            th:value="${project.requestedTeamSize != null ? project.requestedTeamSize : 1}"
+                                            min="1" required>
+                                    </div>
+                                </div>
+                                <div class="form-group mb-3">
                                     <label class="form-label">Optional Comments</label>
                                     <input type="text" name="comments" class="form-control"
                                         placeholder="Great idea! Proceed...">

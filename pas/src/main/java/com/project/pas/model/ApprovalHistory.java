@@ -40,6 +40,15 @@ public class ApprovalHistory {
     @Column(columnDefinition = "TEXT")
     private String rejectionReason;
 
+    private Integer previousRequestedTeamSize;
+    private Integer newRequestedTeamSize;
+
+    private Integer previousMinTeamSize;
+    private Integer newMinTeamSize;
+
+    private Integer previousMaxTeamSize;
+    private Integer newMaxTeamSize;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime timestamp;
 
@@ -131,5 +140,53 @@ public class ApprovalHistory {
 
     public void setTimestamp(LocalDateTime timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public Integer getPreviousRequestedTeamSize() {
+        return previousRequestedTeamSize;
+    }
+
+    public void setPreviousRequestedTeamSize(Integer previousRequestedTeamSize) {
+        this.previousRequestedTeamSize = previousRequestedTeamSize;
+    }
+
+    public Integer getNewRequestedTeamSize() {
+        return newRequestedTeamSize;
+    }
+
+    public void setNewRequestedTeamSize(Integer newRequestedTeamSize) {
+        this.newRequestedTeamSize = newRequestedTeamSize;
+    }
+
+    public Integer getPreviousMinTeamSize() {
+        return previousMinTeamSize;
+    }
+
+    public void setPreviousMinTeamSize(Integer previousMinTeamSize) {
+        this.previousMinTeamSize = previousMinTeamSize;
+    }
+
+    public Integer getNewMinTeamSize() {
+        return newMinTeamSize;
+    }
+
+    public void setNewMinTeamSize(Integer newMinTeamSize) {
+        this.newMinTeamSize = newMinTeamSize;
+    }
+
+    public Integer getPreviousMaxTeamSize() {
+        return previousMaxTeamSize;
+    }
+
+    public void setPreviousMaxTeamSize(Integer previousMaxTeamSize) {
+        this.previousMaxTeamSize = previousMaxTeamSize;
+    }
+
+    public Integer getNewMaxTeamSize() {
+        return newMaxTeamSize;
+    }
+
+    public void setNewMaxTeamSize(Integer newMaxTeamSize) {
+        this.newMaxTeamSize = newMaxTeamSize;
     }
 }

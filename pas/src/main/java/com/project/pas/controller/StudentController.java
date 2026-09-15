@@ -79,10 +79,12 @@ public class StudentController {
             @RequestParam String title, @RequestParam String description,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String techStack,
+            @RequestParam Integer requestedTeamSize,
             RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         try {
-            Project project = projectService.submitOwnIdea(student, title, description, category, techStack);
+            Project project = projectService.submitOwnIdea(student, title, description, category, techStack,
+                    requestedTeamSize);
             redirect.addFlashAttribute("success", "Project idea submitted successfully! Awaiting faculty review.");
             return "redirect:/student/project/" + project.getId();
         } catch (Exception e) {

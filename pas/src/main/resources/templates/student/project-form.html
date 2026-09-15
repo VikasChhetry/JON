@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/layout :: html(
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: html(
           title='Propose Project Idea',
           content=~{::main}
       )}">
+
 <body>
     <main th:fragment="main">
         <div class="page-header">
             <h1>Propose Project Idea</h1>
             <p>Submit your own custom project idea for faculty approval</p>
         </div>
-        
+
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
         <div class="row">
@@ -18,35 +18,49 @@
                 <div class="content-card">
                     <div class="card-body">
                         <form th:action="@{/student/project/new}" method="post" data-validate>
-                            
+
                             <div class="form-group mb-4">
                                 <label class="form-label text-primary">Project Title *</label>
-                                <input type="text" name="title" class="form-control form-control-lg" required maxlength="200" placeholder="e.g., AI-Powered Attendance System">
+                                <input type="text" name="title" class="form-control form-control-lg" required
+                                    maxlength="200" placeholder="e.g., AI-Powered Attendance System">
                             </div>
-                            
+
                             <div class="form-group mb-4">
                                 <label class="form-label text-primary">Detailed Description *</label>
-                                <textarea name="description" class="form-control" rows="6" required placeholder="Describe what your project does, its objectives, and key features..."></textarea>
+                                <textarea name="description" class="form-control" rows="6" required
+                                    placeholder="Describe what your project does, its objectives, and key features..."></textarea>
                             </div>
-                            
+
                             <div class="row">
                                 <div class="col-md-6 form-group mb-4">
                                     <label class="form-label">Category</label>
-                                    <input type="text" name="category" class="form-control" maxlength="100" placeholder="e.g., Machine Learning, Web App">
+                                    <input type="text" name="category" class="form-control" maxlength="100"
+                                        placeholder="e.g., Machine Learning, Web App">
                                 </div>
                                 <div class="col-md-6 form-group mb-4">
                                     <label class="form-label">Tech Stack</label>
-                                    <input type="text" name="techStack" class="form-control" maxlength="300" placeholder="e.g., Python, React, PostgreSQL">
+                                    <input type="text" name="techStack" class="form-control" maxlength="300"
+                                        placeholder="e.g., Python, React, PostgreSQL">
                                 </div>
                             </div>
-                            
+
+                            <div class="form-group mb-4">
+                                <label class="form-label text-primary">Requested Team Size *</label>
+                                <input type="number" name="requestedTeamSize" class="form-control" min="1" max="10"
+                                    required placeholder="Enter total team size (including you)">
+                                <small class="text-secondary mt-1 d-block">Maximum allowed is 10. The faculty will
+                                    review and set the final approved team size.</small>
+                            </div>
+
                             <div class="alert alert-info d-flex align-items-center mb-4">
                                 <i class="fas fa-info-circle fs-4 me-3"></i>
                                 <div>
-                                    <strong>Note:</strong> Once submitted, your idea will be reviewed by faculty from the <strong><span th:text="${student.branch.code}"></span></strong> branch. You can start working on it only after approval.
+                                    <strong>Note:</strong> Once submitted, your idea will be reviewed by faculty from
+                                    the <strong><span th:text="${student.branch.code}"></span></strong> branch. You can
+                                    start working on it only after approval.
                                 </div>
                             </div>
-                            
+
                             <button type="submit" class="btn btn-primary btn-lg px-5">Submit Idea for Review</button>
                         </form>
                     </div>
@@ -57,10 +71,13 @@
                     <div class="card-body">
                         <h3 class="fs-5 fw-bold mb-3 text-primary">Guidelines</h3>
                         <ul class="text-secondary ps-3" style="font-size: 14px;">
-                            <li class="mb-2">Your project must be relevant to your branch (<span th:text="${student.branch.name}"></span>).</li>
+                            <li class="mb-2">Your project must be relevant to your branch (<span
+                                    th:text="${student.branch.name}"></span>).</li>
                             <li class="mb-2">You can only have one active project at a time.</li>
-                            <li class="mb-2">If rejected, you will be able to edit and resubmit this proposal based on faculty feedback.</li>
-                            <li class="mb-2">Provide as much detail as possible in the description to help faculty understand your vision.</li>
+                            <li class="mb-2">If rejected, you will be able to edit and resubmit this proposal based on
+                                faculty feedback.</li>
+                            <li class="mb-2">Provide as much detail as possible in the description to help faculty
+                                understand your vision.</li>
                         </ul>
                     </div>
                 </div>
@@ -68,4 +85,5 @@
         </div>
     </main>
 </body>
+
 </html>

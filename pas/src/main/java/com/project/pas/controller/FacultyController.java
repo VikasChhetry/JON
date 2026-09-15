@@ -16,7 +16,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-import java.util.Arrays;
+
 import java.util.List;
 
 @Controller
@@ -126,12 +126,14 @@ public class FacultyController {
     @PostMapping("/projects/{id}/approve-idea")
     public String approveIdea(Authentication auth, @PathVariable Long id,
             @RequestParam(required = false) String comments,
+            @RequestParam(required = false) Integer minTeamSize,
+            @RequestParam(required = false) Integer maxTeamSize,
             RedirectAttributes redirect) {
         User faculty = getCurrentUser(auth);
         try {
             Project project = projectService.getProjectById(id)
                     .orElseThrow(() -> new IllegalArgumentException("Project not found"));
-            projectService.approveIdea(project, faculty, comments);
+            projectService.approveIdea(project, faculty, comments, minTeamSize, maxTeamSize);
             redirect.addFlashAttribute("success", "Project idea approved!");
         } catch (Exception e) {
             redirect.addFlashAttribute("error", e.getMessage());

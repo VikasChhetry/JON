@@ -63,6 +63,19 @@ public class Project {
 
     private String projectFilePath;
 
+    @Column(name = "requested_team_size")
+    private Integer requestedTeamSize;
+
+    @Column(name = "min_team_size")
+    private Integer minTeamSize;
+
+    @Column(name = "max_team_size")
+    private Integer maxTeamSize;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "team_size_status")
+    private TeamSizeStatus teamSizeStatus;
+
     // ========== Stage 1: Proposal Document Fields ==========
 
     @Column(columnDefinition = "TEXT")
@@ -357,5 +370,37 @@ public class Project {
 
     public void setVideoUrl(String videoUrl) {
         this.videoUrl = videoUrl;
+    }
+
+    public Integer getRequestedTeamSize() {
+        return requestedTeamSize;
+    }
+
+    public void setRequestedTeamSize(Integer requestedTeamSize) {
+        this.requestedTeamSize = requestedTeamSize;
+    }
+
+    public Integer getMinTeamSize() {
+        return minTeamSize;
+    }
+
+    public void setMinTeamSize(Integer minTeamSize) {
+        this.minTeamSize = minTeamSize;
+    }
+
+    public Integer getMaxTeamSize() {
+        return maxTeamSize;
+    }
+
+    public void setMaxTeamSize(Integer maxTeamSize) {
+        this.maxTeamSize = maxTeamSize;
+    }
+
+    public TeamSizeStatus getTeamSizeStatus() {
+        return teamSizeStatus;
+    }
+
+    public void setTeamSizeStatus(TeamSizeStatus teamSizeStatus) {
+        this.teamSizeStatus = teamSizeStatus;
     }
 }
