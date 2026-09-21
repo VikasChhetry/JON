@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<!-- 
+    Reusable Search and Filter Toolbar
+    Usage:
+    <div th:replace="~{fragments/search-filter :: toolbar(
+        actionUrl=@{/path/to/search},
+        searchPlaceholder='Search by name...',
+        showStatusFilter=true,
+        statusOptions=${statuses},
+        showRoleFilter=false,
+        roleOptions=${roles},
+        showSort=true,
+        sortOptions=${sortList}
+    )}"></div>
+-->
+<div th:fragment="toolbar(actionUrl, searchPlaceholder, showStatusFilter, statusOptions, showRoleFilter, roleOptions, showSort, sortOptions)"
+    class="content-card mb-4 bg-light">
+    <form th:action="${actionUrl}" method="get" class="row g-3 align-items-center" id="searchFilterForm">
+
+        <!-- Search Input -->
+        <div class="col-md-4 col-sm-12">
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" class="form-control" name="keyword" th:value="${param.keyword}"
+                    th:placeholder="${searchPlaceholder}">
+            </div>
+        </div>
+
+        <!-- Filters Section -->
+        <div class="col-md-6 col-sm-12 d-flex flex-wrap gap-2 align-items-center">
+
+            <!-- Status Filter -->
+            <select th:if="${showStatusFilter}" name="status" class="form-select w-auto">
+                <option value="">All Statuses</option>
+                <option th:each="opt : ${statusOptions}" th:value="${opt.name()}" th:text="${opt.displayName}"
+                    th:selected="${param.status != null and param.status[0] == opt.name()}">
+                </option>
+            </select>
+
+            <!-- Role Filter -->
+            <select th:if="${showRoleFilter}" name="role" class="form-select w-auto">
+                <option value="">All Roles</option>
+                <option th:each="opt : ${roleOptions}" th:value="${opt.name()}" th:text="${opt.name()}"
+                    th:selected="${param.role != null and param.role[0] == opt.name()}">
+                </option>
+            </select>
+
+            <!-- Sort Select -->
+            <select th:if="${showSort}" name="sort" class="form-select w-auto">
+                <th:block th:if="${sortOptions == null or #lists.isEmpty(sortOptions)}">
+                    <option value="createdAt,desc"
+                        th:selected="${param.sort == null or param.sort[0] == 'createdAt,desc'}">
+                        Newest First</option>
+                    <option value="createdAt,asc"
+                        th:selected="${param.sort != null and param.sort[0] == 'createdAt,asc'}">
+                        Oldest First</option>
+                </th:block>
+                <!-- Allow dynamic sort options if provided -->
+                <option th:each="opt : ${sortOptions}" th:value="${opt.value}" th:text="${opt.label}"
+                    th:selected="${param.sort != null and param.sort[0] == opt.value}">
+                </option>
+            </select>
+
+            <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Apply</button>
+            <a th:href="${actionUrl}" class="btn btn-outline-secondary"><i class="fas fa-times"></i> Clear</a>
+        </div>
+    </form>
+</div>
+
+</html>

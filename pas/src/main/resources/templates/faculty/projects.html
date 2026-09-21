@@ -14,6 +14,14 @@
 
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/faculty/projects},
+            searchPlaceholder='Search by title or student...',
+            showStatusFilter=true, statusOptions=${statusOptions},
+            showRoleFilter=false, roleOptions=null,
+            showSort=true, sortOptions=null
+        )}"></div>
+
         <div class="content-card">
             <div class="table-responsive">
                 <table class="data-table">
@@ -28,7 +36,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="project : ${projects}">
+                        <tr th:each="project : ${page.content}">
                             <td class="fw-bold" th:text="${project.student.fullName}">Student Name</td>
                             <td th:text="${project.title}">Project Title</td>
                             <td>
@@ -48,14 +56,17 @@
                                 </a>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(projects)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="6" class="text-center py-4 text-muted">
-                                No projects assigned to you yet. Students must select you as their Faculty Guide.
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No projects found matching your search or filters.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
     </main>
 </body>

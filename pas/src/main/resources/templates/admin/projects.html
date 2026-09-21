@@ -15,6 +15,14 @@
 
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/admin/projects},
+            searchPlaceholder='Search project by title...',
+            showStatusFilter=true, statusOptions=${statusOptions},
+            showRoleFilter=false, roleOptions=null,
+            showSort=true, sortOptions=null
+        )}"></div>
+
         <div class="content-card">
             <div class="table-responsive">
                 <table class="data-table">
@@ -31,7 +39,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="p : ${projects}">
+                        <tr th:each="p : ${page.content}">
                             <td class="fw-bold" th:text="${'#' + p.id}">#1</td>
                             <td th:text="${p.title}">Title</td>
                             <td th:text="${p.student != null ? p.student.fullName : '-'}">Student</td>
@@ -57,14 +65,17 @@
                                 </form>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(projects)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="8" class="text-center py-4 text-muted">
-                                No projects found in the system.
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No projects found matching your search or filters.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
     </main>
 </body>

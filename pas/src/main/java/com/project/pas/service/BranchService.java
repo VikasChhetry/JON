@@ -4,6 +4,9 @@ import com.project.pas.model.Branch;
 import com.project.pas.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.project.pas.specification.SearchSpecifications;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,8 +23,8 @@ public class BranchService {
     private final GuideAssignmentRepository assignmentRepository;
 
     public BranchService(BranchRepository branchRepository, UserRepository userRepository,
-                         ProjectRepository projectRepository, ProjectTopicRepository topicRepository,
-                         GuideSelectionFormRepository formRepository, GuideAssignmentRepository assignmentRepository) {
+            ProjectRepository projectRepository, ProjectTopicRepository topicRepository,
+            GuideSelectionFormRepository formRepository, GuideAssignmentRepository assignmentRepository) {
         this.branchRepository = branchRepository;
         this.userRepository = userRepository;
         this.projectRepository = projectRepository;
@@ -32,6 +35,10 @@ public class BranchService {
 
     public List<Branch> getAllBranches() {
         return branchRepository.findAll();
+    }
+
+    public Page<Branch> searchBranches(String keyword, Pageable pageable) {
+        return branchRepository.findAll(SearchSpecifications.branchSearch(keyword), pageable);
     }
 
     public Optional<Branch> getBranchById(Long id) {
@@ -72,7 +79,8 @@ public class BranchService {
         boolean hasAssignments = assignmentRepository.existsByBranch(branch);
 
         if (hasUsers || hasProjects || hasTopics || hasForms || hasAssignments) {
-            throw new IllegalStateException("Cannot delete branch '" + branch.getName() + "': it has associated users, projects, topics, or guide assignments. Please remove or reassign those records first.");
+            throw new IllegalStateException("Cannot delete branch '" + branch.getName()
+                    + "': it has associated users, projects, topics, or guide assignments. Please remove or reassign those records first.");
         }
 
         branchRepository.delete(branch);

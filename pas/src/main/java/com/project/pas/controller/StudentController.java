@@ -8,6 +8,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
 import java.util.Optional;
@@ -96,15 +99,21 @@ public class StudentController {
     // ==================== Browse & Select Topics ====================
 
     @GetMapping("/topics")
-    public String browseTopics(Authentication auth, Model model, RedirectAttributes redirect) {
+    public String browseTopics(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort,
+            Authentication auth, Model model, RedirectAttributes redirect) {
         User student = getCurrentUser(auth);
         if (projectService.hasActiveProject(student)) {
             redirect.addFlashAttribute("error",
                     "You already have an active project. Complete it before selecting a new topic.");
             return "redirect:/student/dashboard";
         }
-        List<ProjectTopic> topics = topicService.getAvailableTopics(student.getBranch());
-        model.addAttribute("topics", topics);
+        Page<ProjectTopic> topicPage = topicService.searchTopics(
+                keyword, student.getBranch(), TopicStatus.AVAILABLE, PageRequest.of(page, size, parseSort(sort)));
+        model.addAttribute("page", topicPage);
         model.addAttribute("student", student);
         return "student/topics";
     }
@@ -552,5 +561,15 @@ public class StudentController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/student/dashboard";
+    }
+
+    private Sort parseSort(String[] sort) {
+        if (sort != null && sort.length >= 2) {
+            return Sort.by(Sort.Direction.fromString(sort[1]), sort[0]);
+        } else if (sort != null && sort.length == 1 && sort[0].contains(",")) {
+            String[] parts = sort[0].split(",");
+            return Sort.by(Sort.Direction.fromString(parts[1]), parts[0]);
+        }
+        return Sort.by(Sort.Direction.DESC, "createdAt");
     }
 }

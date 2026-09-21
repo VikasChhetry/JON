@@ -18,6 +18,14 @@
 
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/admin/branches},
+            searchPlaceholder='Search by branch name or code...',
+            showStatusFilter=false, statusOptions=null,
+            showRoleFilter=false, roleOptions=null,
+            showSort=true, sortOptions=null
+        )}"></div>
+
         <div class="content-card">
             <div class="table-responsive">
                 <table class="data-table">
@@ -30,7 +38,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="branch : ${branches}">
+                        <tr th:each="branch : ${page.content}">
                             <td>
                                 <span class="badge bg-secondary" th:text="${branch.code}">CODE</span>
                             </td>
@@ -51,14 +59,17 @@
                                 </form>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(branches)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="4" class="text-center py-4 text-muted">
-                                No branches found. <a th:href="@{/admin/branches/new}">Create one</a>
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No branches found matching your search.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
     </main>
 </body>

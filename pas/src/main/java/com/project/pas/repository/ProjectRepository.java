@@ -5,12 +5,13 @@ import com.project.pas.model.Project;
 import com.project.pas.model.ProjectStatus;
 import com.project.pas.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
 @Repository
-public interface ProjectRepository extends JpaRepository<Project, Long> {
+public interface ProjectRepository extends JpaRepository<Project, Long>, JpaSpecificationExecutor<Project> {
     List<Project> findByStudent(User student);
 
     List<Project> findByBranch(Branch branch);

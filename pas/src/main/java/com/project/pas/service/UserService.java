@@ -7,6 +7,9 @@ import com.project.pas.repository.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.project.pas.specification.SearchSpecifications;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +48,13 @@ public class UserService {
 
     public List<User> getAllUsers() {
         return userRepository.findAll();
+    }
+
+    public Page<User> searchUsers(String keyword, Role roleFilter, Branch branch, Boolean statusFilter,
+            Pageable pageable) {
+        return userRepository.findAll(
+                SearchSpecifications.userSearch(keyword, roleFilter, branch, statusFilter),
+                pageable);
     }
 
     public Optional<User> getUserById(Long id) {
@@ -238,6 +248,14 @@ public class UserService {
         return userRepository.countByRole(role);
     }
 
+    public long countByBranch(Branch branch) {
+        return userRepository.countByBranch(branch);
+    }
+
+    public long countByBranchAndRole(Branch branch, Role role) {
+        return userRepository.countByBranchAndRole(branch, role);
+    }
+
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -296,7 +314,7 @@ public class UserService {
         }
     }
 
-    public BulkUserUploadResult uploadUsersFromCsv(org.springframework.web.multipart.MultipartFile file) {
+    public BulkUserUploadResult uploadUsersFromCsv(org.springframework.web.multipart.MultipartFile file, User admin) {
         BulkUserUploadResult result = new BulkUserUploadResult();
         List<String> lines = fileStorageService.readCsvLines(file);
 
@@ -370,6 +388,14 @@ public class UserService {
                 if (branch == null) {
                     result.addError(i + 1, "Invalid branch code: " + branchCode);
                     continue;
+                }
+
+                if (admin != null && admin.getRole() == Role.ADMIN && admin.getBranch() != null) {
+                    if (!branch.getId().equals(admin.getBranch().getId())) {
+                        result.addError(i + 1, "Access Denied: You can only add users to your assigned branch ("
+                                + admin.getBranch().getCode() + ")");
+                        continue;
+                    }
                 }
 
                 if (role == Role.HOD) {

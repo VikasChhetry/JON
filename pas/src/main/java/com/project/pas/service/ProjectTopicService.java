@@ -5,6 +5,9 @@ import com.project.pas.repository.ProjectTopicRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.project.pas.specification.SearchSpecifications;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +37,12 @@ public class ProjectTopicService {
      */
     public List<ProjectTopic> getTopicsByBranch(Branch branch) {
         return topicRepository.findByBranch(branch);
+    }
+
+    public Page<ProjectTopic> searchTopics(String keyword, Branch branch, TopicStatus statusFilter, Pageable pageable) {
+        return topicRepository.findAll(
+                SearchSpecifications.topicSearch(keyword, branch, statusFilter),
+                pageable);
     }
 
     public Optional<ProjectTopic> getTopicById(Long id) {

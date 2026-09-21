@@ -18,6 +18,14 @@
 
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/faculty/topics},
+            searchPlaceholder='Search by title, category, or tech stack...',
+            showStatusFilter=true, statusOptions=${statusOptions},
+            showRoleFilter=false, roleOptions=null,
+            showSort=true, sortOptions=null
+        )}"></div>
+
         <div class="content-card">
             <div class="table-responsive">
                 <table class="data-table">
@@ -33,7 +41,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="topic : ${topics}">
+                        <tr th:each="topic : ${page.content}">
                             <td class="fw-bold" th:text="${topic.title}">Title</td>
                             <td th:text="${topic.category}">Category</td>
                             <td th:text="${topic.techStack}">Tech Stack</td>
@@ -83,14 +91,17 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(topics)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="7" class="text-center py-4 text-muted">
-                                No topics found. <a th:href="@{/faculty/topics/new}">Create one</a>
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No topics found matching your search or filters.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
     </main>
 </body>

@@ -75,8 +75,17 @@
         <div class="content-card mb-4">
             <div class="card-header bg-primary bg-opacity-10">
                 <h2 class="text-primary"><i class="fas fa-link"></i> Current Assignments (<span
-                        th:text="${#lists.size(assignments)}">0</span>)</h2>
+                        th:text="${page.totalElements}">0</span>)</h2>
             </div>
+
+            <div th:replace="~{fragments/search-filter :: toolbar(
+                actionUrl=@{/hod/guide-selection/assignments},
+                searchPlaceholder='Search student or faculty...',
+                showStatusFilter=false, statusOptions=null,
+                showRoleFilter=false, roleOptions=null,
+                showSort=true, sortOptions=null
+            )}"></div>
+
             <div class="table-responsive">
                 <table class="data-table">
                     <thead>
@@ -89,7 +98,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="a : ${assignments}">
+                        <tr th:each="a : ${page.content}">
                             <td class="fw-bold" th:text="${a.student.fullName}">Student</td>
                             <td th:text="${a.faculty.fullName}">Faculty</td>
                             <td>
@@ -126,15 +135,17 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(assignments)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="fas fa-users-slash fs-1 d-block mb-3 opacity-50"></i>
-                                No guide assignments yet.
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No assignments found matching your criteria.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
 
         <div class="text-center mb-4">

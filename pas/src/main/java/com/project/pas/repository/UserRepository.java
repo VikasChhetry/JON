@@ -4,13 +4,14 @@ import com.project.pas.model.Branch;
 import com.project.pas.model.Role;
 import com.project.pas.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
@@ -24,6 +25,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByBranch(Branch branch);
 
     long countByRole(Role role);
+
+    long countByBranch(Branch branch);
+
+    long countByBranchAndRole(Branch branch, Role role);
 
     boolean existsByErpId(String erpId);
 

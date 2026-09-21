@@ -13,10 +13,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
-
+import java.util.Arrays;
 import java.util.List;
 
 @Controller
@@ -82,11 +85,18 @@ public class FacultyController {
     // ==================== Project Management ====================
 
     @GetMapping("/projects")
-    public String listProjects(Authentication auth, Model model) {
+    public String listProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProjectStatus status,
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User faculty = getCurrentUser(auth);
-        // Only show projects where this faculty is the assigned guide
-        List<Project> projects = projectService.getProjectsByFacultyGuide(faculty);
-        model.addAttribute("projects", projects);
+        Page<Project> projectPage = projectService.searchProjects(
+                keyword, null, faculty, status, null, PageRequest.of(page, size, parseSort(sort)));
+        model.addAttribute("page", projectPage);
+        model.addAttribute("statusOptions", Arrays.asList(ProjectStatus.values()));
         model.addAttribute("faculty", faculty);
         return "faculty/projects";
     }
@@ -231,10 +241,18 @@ public class FacultyController {
     // ==================== Topic Management ====================
 
     @GetMapping("/topics")
-    public String listTopics(Authentication auth, Model model) {
+    public String listTopics(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) TopicStatus status,
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User faculty = getCurrentUser(auth);
-        List<ProjectTopic> topics = topicService.getTopicsByBranch(faculty.getBranch());
-        model.addAttribute("topics", topics);
+        Page<ProjectTopic> topicPage = topicService.searchTopics(
+                keyword, faculty.getBranch(), status, PageRequest.of(page, size, parseSort(sort)));
+        model.addAttribute("page", topicPage);
+        model.addAttribute("statusOptions", Arrays.asList(TopicStatus.values()));
         model.addAttribute("faculty", faculty);
         return "faculty/topics";
     }
@@ -413,14 +431,23 @@ public class FacultyController {
     // ==================== My Students (Guide Assignments) ====================
 
     @GetMapping("/my-students")
-    public String myStudents(Authentication auth, Model model) {
+    public String myStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "assignedAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User faculty = getCurrentUser(auth);
-        var assignments = guideSelectionService.getAssignedStudents(faculty);
+
+        Page<GuideAssignment> assignmentPage = guideSelectionService.searchGuideAssignments(
+                keyword, faculty.getBranch(), faculty, PageRequest.of(page, size, parseSort(sort)));
+
+        var assignments = guideSelectionService.getAssignedStudents(faculty); // Need this for unpaged count
         var activeForm = guideSelectionService.getActiveForm(faculty.getBranch());
         boolean isActive = guideSelectionService.isSelectionActive(faculty.getBranch());
 
         model.addAttribute("faculty", faculty);
-        model.addAttribute("assignments", assignments);
+        model.addAttribute("page", assignmentPage);
         model.addAttribute("activeForm", activeForm.orElse(null));
         model.addAttribute("isActive", isActive);
         model.addAttribute("maxCapacity", faculty.getMaxGuidingCapacity());
@@ -442,5 +469,15 @@ public class FacultyController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/faculty/my-students";
+    }
+
+    private Sort parseSort(String[] sort) {
+        if (sort != null && sort.length >= 2) {
+            return Sort.by(Sort.Direction.fromString(sort[1]), sort[0]);
+        } else if (sort != null && sort.length == 1 && sort[0].contains(",")) {
+            String[] parts = sort[0].split(",");
+            return Sort.by(Sort.Direction.fromString(parts[1]), parts[0]);
+        }
+        return Sort.by(Sort.Direction.DESC, "createdAt");
     }
 }

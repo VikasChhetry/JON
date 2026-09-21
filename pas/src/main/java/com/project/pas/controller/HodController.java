@@ -13,10 +13,14 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -80,10 +84,18 @@ public class HodController {
     // ==================== Project Management ====================
 
     @GetMapping("/projects")
-    public String listProjects(Authentication auth, Model model) {
+    public String listProjects(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProjectStatus status,
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User hod = getCurrentUser(auth);
-        List<Project> projects = projectService.getProjectsByBranch(hod.getBranch());
-        model.addAttribute("projects", projects);
+        Page<Project> projectPage = projectService.searchProjects(
+                keyword, hod.getBranch(), null, status, null, PageRequest.of(page, size, parseSort(sort)));
+        model.addAttribute("page", projectPage);
+        model.addAttribute("statusOptions", Arrays.asList(ProjectStatus.values()));
         model.addAttribute("hod", hod);
         return "hod/projects";
     }
@@ -142,10 +154,18 @@ public class HodController {
     // ==================== Topic Management ====================
 
     @GetMapping("/topics")
-    public String listTopics(Authentication auth, Model model) {
+    public String listTopics(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) TopicStatus status,
+            @RequestParam(defaultValue = "createdAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User hod = getCurrentUser(auth);
-        List<ProjectTopic> topics = topicService.getTopicsByBranch(hod.getBranch());
-        model.addAttribute("topics", topics);
+        Page<ProjectTopic> topicPage = topicService.searchTopics(
+                keyword, hod.getBranch(), status, PageRequest.of(page, size, parseSort(sort)));
+        model.addAttribute("page", topicPage);
+        model.addAttribute("statusOptions", Arrays.asList(TopicStatus.values()));
         model.addAttribute("hod", hod);
         return "hod/topics";
     }
@@ -404,11 +424,18 @@ public class HodController {
     }
 
     @GetMapping("/guide-selection/assignments")
-    public String guideAssignments(Authentication auth, Model model) {
+    public String guideAssignments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "assignedAt,desc") String[] sort,
+            Authentication auth, Model model) {
         User hod = getCurrentUser(auth);
         Branch branch = hod.getBranch();
 
-        List<GuideAssignment> assignments = guideSelectionService.getAssignmentsByBranch(branch);
+        Page<GuideAssignment> assignmentPage = guideSelectionService.searchGuideAssignments(
+                keyword, branch, null, PageRequest.of(page, size, parseSort(sort)));
+
         List<User> students = userService.getUsersByBranchAndRole(branch, Role.STUDENT);
         List<User> faculty = userService.getUsersByBranchAndRole(branch, Role.FACULTY);
         List<User> unassignedStudents = students.stream()
@@ -416,7 +443,7 @@ public class HodController {
                 .toList();
 
         model.addAttribute("hod", hod);
-        model.addAttribute("assignments", assignments);
+        model.addAttribute("page", assignmentPage);
         model.addAttribute("unassignedStudents", unassignedStudents);
         model.addAttribute("faculty", faculty);
 
@@ -492,5 +519,15 @@ public class HodController {
         model.addAttribute("hod", hod);
         model.addAttribute("history", history);
         return "hod/guide-history";
+    }
+
+    private Sort parseSort(String[] sort) {
+        if (sort != null && sort.length >= 2) {
+            return Sort.by(Sort.Direction.fromString(sort[1]), sort[0]);
+        } else if (sort != null && sort.length == 1 && sort[0].contains(",")) {
+            String[] parts = sort[0].split(",");
+            return Sort.by(Sort.Direction.fromString(parts[1]), parts[0]);
+        }
+        return Sort.by(Sort.Direction.DESC, "createdAt");
     }
 }

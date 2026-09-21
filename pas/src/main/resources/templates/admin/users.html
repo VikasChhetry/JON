@@ -55,6 +55,14 @@
             </div>
         </div>
 
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/admin/users},
+            searchPlaceholder='Search by name, email, ERP ID, roll number...',
+            showStatusFilter=false, statusOptions=null,
+            showRoleFilter=true, roleOptions=${roles},
+            showSort=true, sortOptions=null
+        )}"></div>
+
         <div class="content-card">
             <div class="table-responsive">
                 <table class="data-table">
@@ -71,7 +79,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr th:each="user : ${users}">
+                        <tr th:each="user : ${page.content}">
                             <td class="fw-bold" th:text="${user.fullName}">Name</td>
                             <td th:text="${user.email}">Email</td>
                             <td th:text="${user.erpId != null && !user.erpId.isEmpty() ? user.erpId : '-'}">ERP</td>
@@ -112,14 +120,17 @@
                                 </form>
                             </td>
                         </tr>
-                        <tr th:if="${#lists.isEmpty(users)}">
+                        <tr th:if="${page.empty}">
                             <td colspan="8" class="text-center py-4 text-muted">
-                                No users found.
+                                <div
+                                    th:replace="~{fragments/pagination :: empty(page=${page}, message='No users found matching your search or filters.')}">
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
         </div>
     </main>
 </body>

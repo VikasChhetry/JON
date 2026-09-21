@@ -7,6 +7,9 @@ import com.project.pas.repository.ProjectRepository;
 import com.project.pas.repository.ProjectTeamMemberRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import com.project.pas.specification.SearchSpecifications;
 
 import java.util.Arrays;
 import java.util.List;
@@ -143,6 +146,13 @@ public class ProjectService {
         return projectRepository.findByFacultyGuideAndStatusIn(faculty, statuses);
     }
 
+    public Page<Project> searchProjects(String keyword, Branch branch, User facultyGuide, ProjectStatus statusFilter,
+            List<ProjectStatus> statusInFilter, Pageable pageable) {
+        return projectRepository.findAll(
+                SearchSpecifications.projectSearch(keyword, branch, facultyGuide, statusFilter, statusInFilter),
+                pageable);
+    }
+
     public long countByFacultyGuide(User faculty) {
         return projectRepository.countByFacultyGuide(faculty);
     }
@@ -225,7 +235,7 @@ public class ProjectService {
      * Rule: Student can have only one active project at a time.
      */
     public Project submitOwnIdea(User student, String title, String description,
-            String category, String techStack) {
+            String category, String techStack, Integer requestedTeamSize) {
         validateStudent(student);
         validateNoActiveProject(student);
 
@@ -239,6 +249,7 @@ public class ProjectService {
         project.setDescription(description);
         project.setCategory(category);
         project.setTechStack(techStack);
+        project.setRequestedTeamSize(requestedTeamSize);
         project.setStudent(student);
         project.setBranch(student.getBranch());
         project.setProjectType(ProjectType.CUSTOM);
@@ -515,11 +526,24 @@ public class ProjectService {
     /**
      * Faculty approves a custom project idea.
      */
-    public void approveIdea(Project project, User faculty, String comments) {
+    public void approveIdea(Project project, User faculty, String comments, Integer minTeamSize, Integer maxTeamSize) {
         validateFaculty(faculty);
         validateBranchMatch(faculty, project.getBranch());
         validateAssignedGuide(project, faculty);
         validateStatus(project, ProjectStatus.PROJECT_IDEA_PENDING_FACULTY);
+
+        if (minTeamSize == null || maxTeamSize == null) {
+            throw new IllegalArgumentException("Minimum and maximum team sizes are required.");
+        }
+        if (minTeamSize < 1) {
+            throw new IllegalArgumentException("Minimum team size must be at least 1.");
+        }
+        if (maxTeamSize < minTeamSize) {
+            throw new IllegalArgumentException("Maximum team size cannot be smaller than minimum team size.");
+        }
+
+        project.setMinTeamSize(minTeamSize);
+        project.setMaxTeamSize(maxTeamSize);
 
         ProjectStatus previousStatus = project.getStatus();
         project.setStatus(ProjectStatus.PROJECT_IDEA_APPROVED);

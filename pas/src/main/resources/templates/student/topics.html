@@ -13,15 +13,22 @@
 
         <div th:replace="~{fragments/alerts :: alerts}"></div>
 
-        <div th:if="${#lists.isEmpty(topics)}" class="empty-state">
-            <i class="fas fa-folder-open empty-icon"></i>
-            <h3>No Topics Available</h3>
-            <p>There are currently no available topics for the <span th:text="${student.branch.code}"></span> branch.
-                Please check back later or propose your own idea.</p>
+        <div th:replace="~{fragments/search-filter :: toolbar(
+            actionUrl=@{/student/topics},
+            searchPlaceholder='Search topics by title, category, or tech stack...',
+            showStatusFilter=false, statusOptions=null,
+            showRoleFilter=false, roleOptions=null,
+            showSort=true, sortOptions=null
+        )}"></div>
+
+        <div th:if="${page.empty}" class="empty-state">
+            <div
+                th:replace="~{fragments/pagination :: empty(page=${page}, message='No topics available or matching your search criteria.')}">
+            </div>
         </div>
 
         <div class="topic-grid">
-            <div th:each="topic : ${topics}" class="topic-card d-flex flex-column">
+            <div th:each="topic : ${page.content}" class="topic-card d-flex flex-column">
                 <h3 th:text="${topic.title}">Topic Title</h3>
 
                 <div class="topic-tags">
@@ -49,6 +56,7 @@
                 </div>
             </div>
         </div>
+        <div th:replace="~{fragments/pagination :: controls(page=${page})}"></div>
     </main>
 </body>
 
