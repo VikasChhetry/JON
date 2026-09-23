@@ -1402,8 +1402,8 @@ a {
     opacity: 1 !important;
 }
 
-/* ===== Guide Selection Muted Text Visibility ===== */
-.content-card .text-muted {
+/* ===== Faculty Guide Email Visibility ===== */
+.data-table td.text-muted {
     color: var(--text-secondary) !important;
     opacity: 1 !important;
 }
