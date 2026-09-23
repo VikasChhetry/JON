@@ -23,9 +23,15 @@
                     <div class="col-md-6">
                         <h4>Your Faculty Guide</h4>
                         <div class="d-flex align-items-center gap-3 mt-3">
-                            <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.2rem;">
+                            <!-- Faculty avatar: show photo if available -->
+                            <div class="user-avatar" style="width: 50px; height: 50px; font-size: 1.2rem;"
+                                th:if="${assignment.faculty.profilePhotoPath == null}">
                                 <i class="fas fa-user-tie"></i>
                             </div>
+                            <img th:if="${assignment.faculty.profilePhotoPath != null}"
+                                th:src="@{'/' + ${assignment.faculty.profilePhotoPath}}"
+                                class="rounded-circle object-fit-cover border border-secondary"
+                                style="width: 50px; height: 50px;" alt="Faculty Photo">
                             <div>
                                 <div class="fw-bold fs-5" th:text="${assignment.faculty.fullName}">Faculty Name</div>
                                 <div class="text-muted" th:text="${assignment.faculty.email}">email</div>

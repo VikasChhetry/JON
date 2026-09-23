@@ -210,6 +210,13 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    public void updateProfilePhoto(Long userId, String photoPath) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setProfilePhotoPath(photoPath);
+        userRepository.save(user);
+    }
+
     public void updatePassword(Long id, String rawPassword) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));

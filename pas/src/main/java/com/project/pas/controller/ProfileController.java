@@ -19,9 +19,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class ProfileController {
 
     private final UserService userService;
+    private final com.project.pas.service.FileStorageService fileStorageService;
 
-    public ProfileController(UserService userService) {
+    public ProfileController(UserService userService, com.project.pas.service.FileStorageService fileStorageService) {
         this.userService = userService;
+        this.fileStorageService = fileStorageService;
     }
 
     private User getCurrentUser(Authentication auth) {
@@ -69,5 +71,64 @@ public class ProfileController {
             redirect.addFlashAttribute("error", e.getMessage());
         }
         return "redirect:/profile";
+    }
+
+    @PostMapping("/profile/photo")
+    public String uploadPhoto(Authentication auth,
+            @RequestParam("photo") org.springframework.web.multipart.MultipartFile file, RedirectAttributes redirect) {
+        User user = getCurrentUser(auth);
+        try {
+            if (file == null || file.isEmpty()) {
+                throw new IllegalArgumentException("Please select a file to upload");
+            }
+
+            String contentType = file.getContentType();
+            if (contentType == null || (!contentType.equals("image/jpeg") && !contentType.equals("image/png")
+                    && !contentType.equals("image/webp"))) {
+                throw new IllegalArgumentException("Only JPG, PNG and WEBP images are allowed");
+            }
+
+            if (file.getSize() > 5 * 1024 * 1024) { // 5MB limit
+                throw new IllegalArgumentException("File size exceeds 5MB limit");
+            }
+
+            String path = fileStorageService.storeFile(file, "profiles");
+            userService.updateProfilePhoto(user.getId(), path);
+            redirect.addFlashAttribute("success", "Profile photo updated successfully!");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/profile";
+    }
+
+    @PostMapping("/profile/photo/remove")
+    public String removePhoto(Authentication auth, RedirectAttributes redirect) {
+        User user = getCurrentUser(auth);
+        try {
+            userService.updateProfilePhoto(user.getId(), null);
+            redirect.addFlashAttribute("success", "Profile photo removed.");
+        } catch (Exception e) {
+            redirect.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/profile";
+    }
+
+    @GetMapping("/profiles/{filename}")
+    public org.springframework.http.ResponseEntity<org.springframework.core.io.Resource> getProfilePhoto(
+            @org.springframework.web.bind.annotation.PathVariable String filename) {
+        try {
+            java.nio.file.Path path = fileStorageService.getFilePath("profiles/" + filename);
+            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(path.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                return org.springframework.http.ResponseEntity.notFound().build();
+            }
+
+            return org.springframework.http.ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CACHE_CONTROL, "max-age=86400")
+                    .body(resource);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.internalServerError().build();
+        }
     }
 }

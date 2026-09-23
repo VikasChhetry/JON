@@ -126,9 +126,13 @@
 
             <div class="sidebar-footer">
                 <div class="user-info">
-                    <div class="user-avatar">
+                    <!-- Show profile photo if set, otherwise show default icon -->
+                    <div class="user-avatar" th:if="${currentUser == null or currentUser.profilePhotoPath == null}">
                         <i class="fas fa-user"></i>
                     </div>
+                    <img th:if="${currentUser != null and currentUser.profilePhotoPath != null}"
+                        th:src="@{'/' + ${currentUser.profilePhotoPath}}" class="user-avatar"
+                        style="object-fit: cover; border: 2px solid var(--primary);" alt="Profile Photo">
                     <div>
                         <div class="user-name" th:text="${#authentication.principal.username}">User</div>
                         <div class="user-role"

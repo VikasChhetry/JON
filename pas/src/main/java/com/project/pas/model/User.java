@@ -52,6 +52,8 @@ public class User {
     @Column(unique = true)
     private String rollNumber;
 
+    private String profilePhotoPath;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -159,5 +161,13 @@ public class User {
 
     public void setRollNumber(String rollNumber) {
         this.rollNumber = rollNumber;
+    }
+
+    public String getProfilePhotoPath() {
+        return profilePhotoPath;
+    }
+
+    public void setProfilePhotoPath(String profilePhotoPath) {
+        this.profilePhotoPath = profilePhotoPath;
     }
 }
