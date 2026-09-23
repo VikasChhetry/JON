@@ -123,19 +123,17 @@ public class SearchSpecifications {
 
             if (StringUtils.hasText(keyword)) {
                 String searchPattern = "%" + keyword.toLowerCase().trim() + "%";
-                Predicate studentName = cb.like(cb.lower(root.join("student", JoinType.LEFT).get("fullName")),
-                        searchPattern);
-                Predicate studentEmail = cb.like(cb.lower(root.join("student", JoinType.LEFT).get("email")),
-                        searchPattern);
-                Predicate studentErpId = cb.like(cb.lower(root.join("student", JoinType.LEFT).get("erpId")),
-                        searchPattern);
-                Predicate studentRollNumber = cb.like(cb.lower(root.join("student", JoinType.LEFT).get("rollNumber")),
-                        searchPattern);
 
-                Predicate facultyName = cb.like(cb.lower(root.join("faculty", JoinType.LEFT).get("fullName")),
-                        searchPattern);
-                Predicate facultyEmail = cb.like(cb.lower(root.join("faculty", JoinType.LEFT).get("email")),
-                        searchPattern);
+                jakarta.persistence.criteria.Join<Object, Object> studentJoin = root.join("student", JoinType.LEFT);
+                jakarta.persistence.criteria.Join<Object, Object> facultyJoin = root.join("faculty", JoinType.LEFT);
+
+                Predicate studentName = cb.like(cb.lower(studentJoin.get("fullName")), searchPattern);
+                Predicate studentEmail = cb.like(cb.lower(studentJoin.get("email")), searchPattern);
+                Predicate studentErpId = cb.like(cb.lower(studentJoin.get("erpId")), searchPattern);
+                Predicate studentRollNumber = cb.like(cb.lower(studentJoin.get("rollNumber")), searchPattern);
+
+                Predicate facultyName = cb.like(cb.lower(facultyJoin.get("fullName")), searchPattern);
+                Predicate facultyEmail = cb.like(cb.lower(facultyJoin.get("email")), searchPattern);
 
                 predicates.add(
                         cb.or(studentName, studentEmail, studentErpId, studentRollNumber, facultyName, facultyEmail));

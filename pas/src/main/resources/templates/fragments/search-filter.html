@@ -15,13 +15,13 @@
     )}"></div>
 -->
 <div th:fragment="toolbar(actionUrl, searchPlaceholder, showStatusFilter, statusOptions, showRoleFilter, roleOptions, showSort, sortOptions)"
-    class="content-card mb-4 bg-light">
-    <form th:action="${actionUrl}" method="get" class="row g-3 align-items-center" id="searchFilterForm">
+    class="content-card mb-4 search-toolbar">
+    <form th:action="${actionUrl}" method="get" class="row g-3 align-items-center p-3" id="searchFilterForm">
 
         <!-- Search Input -->
         <div class="col-md-4 col-sm-12">
             <div class="input-group">
-                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
                 <input type="text" class="form-control" name="keyword" th:value="${param.keyword}"
                     th:placeholder="${searchPlaceholder}">
             </div>

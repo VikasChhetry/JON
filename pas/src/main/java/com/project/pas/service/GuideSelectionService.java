@@ -504,9 +504,28 @@ public class GuideSelectionService {
 
     public Page<GuideAssignment> searchGuideAssignments(String keyword, Branch branch, User facultyFilter,
             Pageable pageable) {
+
+        // Map generic "createdAt" sortBy to "assignedAt" to resolve 500 property
+        // exceptions
+        org.springframework.data.domain.Sort safeSort = org.springframework.data.domain.Sort.by(
+                pageable.getSort().stream()
+                        .map(order -> {
+                            if ("createdAt".equals(order.getProperty())) {
+                                return new org.springframework.data.domain.Sort.Order(order.getDirection(),
+                                        "assignedAt");
+                            }
+                            return order;
+                        })
+                        .collect(Collectors.toList()));
+
+        Pageable safePageable = org.springframework.data.domain.PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                safeSort);
+
         return assignmentRepository.findAll(
                 SearchSpecifications.guideAssignmentSearch(keyword, branch, facultyFilter),
-                pageable);
+                safePageable);
     }
 
     /**

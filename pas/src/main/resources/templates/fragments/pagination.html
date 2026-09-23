@@ -61,7 +61,7 @@
 </div>
 <!-- Empty records message -->
 <div th:fragment="empty(page, message)" th:if="${page != null and page.totalElements == 0}"
-    class="text-center py-5 text-muted">
+    class="text-center py-5 empty-result-message">
     <i class="fas fa-search fs-1 d-block mb-3 opacity-50"></i>
     <span th:text="${message}">No records found matching your search or filters.</span>
 </div>
