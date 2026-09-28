@@ -12,19 +12,20 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     @Bean
-    public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public CommandLineRunner initData(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            @org.springframework.beans.factory.annotation.Value("${INITIAL_ADMIN_PASSWORD}") String initialPassword) {
         return args -> {
             // Create default admin if none exists
             if (userRepository.findByEmail("admin@pas.com").isEmpty()) {
                 User admin = new User();
                 admin.setFullName("System Administrator");
                 admin.setEmail("admin@pas.com");
-                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setPassword(passwordEncoder.encode(initialPassword));
                 admin.setRole(Role.ADMIN);
                 admin.setEnabled(true);
                 // Admin has no branch
                 userRepository.save(admin);
-                System.out.println("=== Default admin created: admin@pas.com / admin123 ===");
+                // System.out.println("=== Default admin created: admin@pas.com ===");
             }
         };
     }

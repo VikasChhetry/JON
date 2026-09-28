@@ -13,6 +13,9 @@ public class EmailTestController {
 
     private final EmailService emailService;
 
+    @org.springframework.beans.factory.annotation.Value("${EMAIL_TEST_SECRET:local-secret}")
+    private String testSecret;
+
     public EmailTestController(EmailService emailService) {
         this.emailService = emailService;
     }
@@ -25,7 +28,7 @@ public class EmailTestController {
     public ResponseEntity<?> testEmailDelivery(@RequestBody Map<String, String> request) {
         // Enforce a simple secret key so this test endpoint isn't abused
         String secret = request.get("secret");
-        if (!"dev-secret-2026".equals(secret)) {
+        if (this.testSecret == null || !this.testSecret.equals(secret)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "Unauthorized. Invalid secret."));
         }
 

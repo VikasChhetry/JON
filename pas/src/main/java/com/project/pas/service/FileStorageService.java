@@ -42,10 +42,16 @@ public class FileStorageService {
 
             String storedFilename = UUID.randomUUID().toString() + extension;
 
-            Path targetDir = uploadDir.resolve(subdirectory);
+            Path targetDir = uploadDir.resolve(subdirectory).normalize();
+            if (!targetDir.startsWith(uploadDir)) {
+                throw new SecurityException("Cannot store file outside current directory");
+            }
             Files.createDirectories(targetDir);
 
-            Path targetPath = targetDir.resolve(storedFilename);
+            Path targetPath = targetDir.resolve(storedFilename).normalize();
+            if (!targetPath.startsWith(uploadDir)) {
+                throw new SecurityException("Cannot store file outside current directory");
+            }
             Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             return subdirectory + "/" + storedFilename;
@@ -58,7 +64,11 @@ public class FileStorageService {
      * Returns the absolute path for a stored file.
      */
     public Path getFilePath(String relativePath) {
-        return uploadDir.resolve(relativePath);
+        Path resolvedPath = uploadDir.resolve(relativePath).normalize();
+        if (!resolvedPath.startsWith(uploadDir)) {
+            throw new SecurityException("Cannot read file outside current directory");
+        }
+        return resolvedPath;
     }
 
     /**

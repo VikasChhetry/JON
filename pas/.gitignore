@@ -1,10 +1,16 @@
-HELP.md
+### Build Output ###
 target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-### STS ###
+### IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### STS / Eclipse ###
 .apt_generated
 .classpath
 .factorypath
@@ -13,11 +19,8 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
+### VS Code ###
+.vscode/
 
 ### NetBeans ###
 /nbproject/private/
@@ -29,5 +32,28 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+### Logs ###
+*.log
+logs/
+spring.log
+
+### Environment / Secrets ###
+.env
+.env.*
+*.env
+application-local.properties
+application-secret.properties
+
+### User Uploads (live data — never commit) ###
+uploads/
+
+### OS Generated ###
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Temporary / Debug files ###
+PasswordGenerator.java
+HELP.md
+*.md.resolved
